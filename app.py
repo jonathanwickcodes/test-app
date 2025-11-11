@@ -632,6 +632,24 @@ def get_roadmap_image_output(market_radar_data: str):
 
     image_prompt = ROADMAP_IMAGE_PROMPT_TEMPLATE.format(market_radar_data=market_radar_data)
 
+    # Function to generate text fallback
+    def generate_text_fallback(data):
+        st.warning("Visual roadmap generation failed. Generating a text-based fallback roadmap...")
+        fallback_prompt = (
+            "Based *only* on the CONTEXT below, output a structured text-based "
+            "3-phase or 4-quarter roadmap (using markdown lists and headers) "
+            "for the startup. Focus on logical next steps: MVP, Customer Acquisition, and Scaling. "
+            "CONTEXT:\n---\n" + data
+        )
+        try:
+            text_model = genai.GenerativeModel("gemini-2.5-flash-preview-09-2025")
+            text_resp = text_model.generate_content(fallback_prompt)
+            return "TEXT_FALLBACK::" + clean_model_markdown(text_resp.text or "Error: Could not generate a text fallback roadmap.")
+        except Exception as fallback_e:
+            st.error(f"Error generating text fallback: {fallback_e}")
+            return f"Error: Could not generate a text fallback roadmap. {fallback_e}"
+
+
     try:
         resp = model.generate_content(
             contents=[
@@ -642,7 +660,7 @@ def get_roadmap_image_output(market_radar_data: str):
             }
         )
 
-        # FIX: Check if the response structure is valid before accessing parts
+        # Check if the response structure is valid before accessing parts
         if (resp.candidates and 
             resp.candidates[0].content and 
             resp.candidates[0].content.parts and 
@@ -653,26 +671,13 @@ def get_roadmap_image_output(market_radar_data: str):
             base64_data = resp.candidates[0].content.parts[0].inline_data.data
             return f"data:image/jpeg;base64,{base64_data}"
         else:
-            # FIX: If image generation fails, generate a text-based roadmap as a fallback
-            st.warning("Image generation returned empty data. Falling back to text-based roadmap generation...")
-            
-            # Text generation fallback prompt using the existing market radar data
-            fallback_prompt = (
-                "Based *only* on the CONTEXT below, output a structured text-based "
-                "3-phase or 4-quarter roadmap (using markdown lists and headers) "
-                "for the startup. Focus on logical next steps: MVP, Customer Acquisition, and Scaling. "
-                "CONTEXT:\n---\n" + market_radar_data
-            )
-            
-            text_model = genai.GenerativeModel("gemini-2.5-flash-preview-09-2025")
-            text_resp = text_model.generate_content(fallback_prompt)
-            
-            return "TEXT_FALLBACK::" + clean_model_markdown(text_resp.text or "Error: Could not generate a text fallback roadmap.")
+            # Case 1: Response returned, but no valid image data found (empty candidates/parts)
+            return generate_text_fallback(market_radar_data)
 
     except Exception as e:
-        st.error(f"An error occurred while calling the Gemini Image API: {e}")
-        # FIX: Ensure a clear error message is returned on exception
-        return f"Error: Could not generate image content. {e}"
+        st.error(f"An exception occurred during Gemini Image API call: {e}")
+        # Case 2: An explicit exception occurred (e.g., timeout, network issue)
+        return generate_text_fallback(market_radar_data)
 
 
 # --- Pages -----------------------------------------------------------------
