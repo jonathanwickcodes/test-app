@@ -27,7 +27,7 @@ def clean_model_markdown(text: str) -> str:
     # remove lines that only contain <div> or </div> (with optional spaces)
     text = re.sub(r"^\s*</?div>\s*$", "", text, flags=re.IGNORECASE | re.MULTILINE)
     # remove any stray standalone <div> / </div> that might appear inline
-    text = re.sub(r"\s*</?div>\s*", " ", text, flags=re.IGNORECASE)
+    text = re.sub(r"\s*</?div>\\s*", " ", text, flags=re.IGNORECASE)
     return text.strip()
 
 # --- Branding assets -------------------------------------------------------
@@ -149,10 +149,11 @@ APPLE_TAILWIND_CSS = """
         background: none !important;
         border: none !important;
     }
+    /* Active/Disabled Navbar button styling (fixed) */
     .apple-nav-container [data-testid="stButton"] > button:disabled {
         font-weight: 600;
-        color: #FFFFFF !important; /* White (active) */
-        background: none !important;
+        color: #FFFFFF !important; /* White (active color) */
+        background: #003366 !important; /* Slightly darker blue to highlight */
         border: none !important;
         cursor: default !important;
     }
@@ -165,7 +166,7 @@ APPLE_TAILWIND_CSS = """
         border: 1px solid #CCCCCC; /* Light gray border */
         border-radius: 8px;
         padding: 12px 15px;
-        font-size: 2rem;
+        font-size: 1.5rem; /* Decreased font size from 2rem to 1.5rem (FIX) */
         font-family: 'Inter', sans-serif;
     }
     [data-testid="stTextArea"] > div > div > textarea {
@@ -182,7 +183,7 @@ APPLE_TAILWIND_CSS = """
         color: #444444; /* Dark gray label */
         font-weight: 500;
         padding-bottom: 5px;
-        font-size: 2rem !important; /* Changed from 1.3rem */
+        font-size: 2rem !important;
     }
     
     /* Primary button (e.g., Generate) */
@@ -396,7 +397,6 @@ try:
     # NOTE: Using a placeholder API key. In a real environment, this should be secured.
     API_KEY = "AIzaSyBKDZtEZf9LjlBnADcWBtoExM7-6LTZc0E" 
     genai.configure(api_key=API_KEY)
-    # Removed: CLIENT = genai.Client() as it causes the error.
     GEMINI_ENABLED = True
 except Exception as e:
     st.error(f"Error configuring Gemini API: {e}. Please check the API key.")
@@ -645,34 +645,40 @@ def get_market_radar_output(segmentation_data: str):
         st.error(f"An error occurred while calling the Gemini API for Market Radar: {e}")
         return f"Error: Could not generate Market Radar content. {e}"
 
-# NEW: Function to generate the roadmap image
+# NEW: Function to generate the roadmap image (Fixed for stability)
 def get_roadmap_image_output(market_radar_data: str):
-    # Removed: global CLIENT
     if not GEMINI_ENABLED:
         return "Error: Gemini API is not configured."
 
-    # Use the specific image generation model as requested
     model_name = "gemini-2.5-flash-image-preview"
     model = genai.GenerativeModel(model_name)
 
-    # The prompt for the image generation
     image_prompt = ROADMAP_IMAGE_PROMPT_TEMPLATE.format(market_radar_data=market_radar_data)
 
     try:
-        # Use the GenerativeModel's generate_content method
         resp = model.generate_content(
             contents=[
                 {"role": "user", "parts": [{"text": image_prompt}]}
             ],
             config={
-                # Requesting JPEG format for the base64 output
                 "response_mime_type": "image/jpeg", 
             }
         )
 
-        # Extract the base64 data
-        base64_data = resp.candidates[0].content.parts[0].inline_data.data
-        return f"data:image/jpeg;base64,{base64_data}"
+        # FIX: Check if the response structure is valid before accessing parts
+        if (resp.candidates and 
+            resp.candidates[0].content and 
+            resp.candidates[0].content.parts and 
+            len(resp.candidates[0].content.parts) > 0 and 
+            resp.candidates[0].content.parts[0].inline_data and 
+            resp.candidates[0].content.parts[0].inline_data.data):
+            
+            base64_data = resp.candidates[0].content.parts[0].inline_data.data
+            return f"data:image/jpeg;base64,{base64_data}"
+        else:
+            # Handle cases where the response is technically successful but returns no image data
+            st.warning("Image generation returned a response, but no valid image data was found.")
+            return "Error: Image generation returned empty data."
 
     except Exception as e:
         st.error(f"An error occurred while calling the Gemini Image API: {e}")
