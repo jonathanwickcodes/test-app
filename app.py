@@ -166,7 +166,7 @@ APPLE_TAILWIND_CSS = """
         border: 1px solid #CCCCCC; /* Light gray border */
         border-radius: 8px;
         padding: 12px 15px;
-        font-size: 1.5rem; /* Decreased font size from 2rem to 1.5rem (FIX) */
+        font-size: 0.85rem; /* Decreased font size from 1.5rem to 0.85rem (FIX) */
         font-family: 'Inter', sans-serif;
     }
     [data-testid="stTextArea"] > div > div > textarea {
@@ -651,13 +651,13 @@ def get_roadmap_image_output(market_radar_data: str):
 
 
     try:
+        # FIX: Removed the 'config' parameter and passed 'response_mime_type' directly as an argument
+        # This resolves the "unexpected keyword argument 'config'" error.
         resp = model.generate_content(
             contents=[
                 {"role": "user", "parts": [{"text": image_prompt}]}
             ],
-            config={
-                "response_mime_type": "image/jpeg", 
-            }
+            response_mime_type="image/jpeg"
         )
 
         # Check if the response structure is valid before accessing parts
