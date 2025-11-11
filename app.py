@@ -960,7 +960,9 @@ def page_e():
     st.markdown("""
         <p style="font-size: 1.1rem; color: #333333;">
         Design flexible pricing strategies that align with your value proposition and market demand.
+        They've been updated with USB-C and extended battery life.
         </p>
+    
     # --- MODIFICATION: Display the pricing image ---
     # Check if the file exists in the root directory
     if os.path.exists("pricing.png"):
@@ -970,6 +972,7 @@ def page_e():
         # Show a warning if the image is missing, but don't break the app
         st.warning("Image 'pricing.png' not found. Please make sure it's in the root directory.")
     # --- END MODIFICATION ---
+
     """, unsafe_allow_html=True)
 
 # --- Router ----------------------------------------------------------------
