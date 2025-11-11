@@ -163,7 +163,7 @@ APPLE_TAILWIND_CSS = """
         border: 1px solid #CCCCCC; /* Light gray border */
         border-radius: 8px;
         padding: 12px 15px;
-        font-size: 1rem;
+        font-size: 2rem;
         font-family: 'Inter', sans-serif;
     }
     [data-testid="stTextArea"] > div > div > textarea {
@@ -551,7 +551,7 @@ def navigate_to(page_key):
 
 def create_main_navbar():
     # st.markdown('<div class="apple-nav-container">', unsafe_allow_html=True)
-    cols = st.columns([1, 2, 2, 2, 2, 2])
+    cols = st.columns([2, 2, 2, 2, 2, 2])
     page_keys = list(PAGE_NAMES.keys())
     page_vals = list(PAGE_NAMES.values())
 
