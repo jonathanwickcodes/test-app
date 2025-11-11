@@ -347,6 +347,15 @@ APPLE_TAILWIND_CSS = """
 </style>
 """
 
+tabs_font_css = """
+<style>
+div[class*="stTextArea"] label {
+  font-size: 26px;
+  color: 0A2351;
+}
+</style>
+"""
+
 # Optional: convert the first nav button to a logo button if the logo exists.
 LOGO_BUTTON_STYLE = f"""
 <style>
@@ -357,7 +366,7 @@ LOGO_BUTTON_STYLE = f"""
         background-position: center;
         {"color: transparent !important;" if logo_base64 else ""}
         width: 100%;
-        height: 40px;
+        height: 0px;
         border: none !important;
         background-color: #0A2351 !important; /* Match navbar blue */
         padding: 0 !important;
