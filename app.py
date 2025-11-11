@@ -364,11 +364,9 @@ LOGO_BUTTON_STYLE = f"""
         background-size: contain;
         background-repeat: no-repeat;
         background-position: center;
-        {"color: transparent !important;" if logo_base64 else ""}
         width: 100%;
         height: 0px;
         border: none !important;
-        background-color: #0A2351 !important; /* Match navbar blue */
         padding: 0 !important;
         white-space: nowrap;
     }}
@@ -386,7 +384,7 @@ LOGO_BUTTON_STYLE = f"""
 </style>
 """
 
-st.set_page_config(layout="wide", page_title="Brand Generator App")
+st.set_page_config(layout="wide", page_title="SmartWise App")
 st.markdown(APPLE_TAILWIND_CSS, unsafe_allow_html=True)
 st.markdown(LOGO_BUTTON_STYLE, unsafe_allow_html=True)
 
@@ -552,7 +550,7 @@ def navigate_to(page_key):
     st.session_state.current_page = page_key
 
 def create_main_navbar():
-    st.markdown('<div class="apple-nav-container">', unsafe_allow_html=True)
+    # st.markdown('<div class="apple-nav-container">', unsafe_allow_html=True)
     cols = st.columns([1, 2, 2, 2, 2, 2])
     page_keys = list(PAGE_NAMES.keys())
     page_vals = list(PAGE_NAMES.values())
