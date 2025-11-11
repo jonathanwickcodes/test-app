@@ -391,7 +391,7 @@ st.markdown(LOGO_BUTTON_STYLE, unsafe_allow_html=True)
 # --- Gemini config (TEXT model only) ---------------------------------------
 
 try:
-    API_KEY = "YOUR_GEMINI_API_KEY"
+    API_KEY = "AIzaSyBKDZtEZf9LjlBnADcWBtoExM7-6LTZc0E"
     genai.configure(api_key=API_KEY)
     GEMINI_ENABLED = True
 except Exception as e:
