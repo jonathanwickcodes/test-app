@@ -4,6 +4,7 @@ import google.generativeai as genai
 import os
 import re
 import base64
+from typing import Optional
 
 # --- Helpers ---------------------------------------------------------------
 
@@ -13,21 +14,27 @@ def get_image_as_base64(file_path):
         with open(file_path, "rb") as img_file:
             return f"data:image/jpeg;base64,{base64.b64encode(img_file.read()).decode()}"
     except FileNotFoundError:
-        # Note: If StartWiseLogo.jpeg is not present, Streamlit will show an error, 
-        # but the app will continue to run without the logo image.
-        # st.error(f"Logo file '{file_path}' not found. Please ensure 'StartWiseLogo.jpeg' is in the same directory as 'app.py'.")
+        st.error(f"Logo file '{file_path}' not found. Please ensure 'StartWiseLogo.jpeg' is in the same directory as 'app.py'.")
         return ""
 
 def clean_model_markdown(text: str) -> str:
     """
-    Cleanups for model output so we don't render stray HTML tags as text:
+    Cleanups for model output so we don't render stray HTML tags as text and
+    remove unwanted headings like "Generated Persona Image".
+
     - remove any lines that are just <div> or </div>
     - (safety) remove bare opening/closing div tags inline as well
+    - strip lines containing the phrase "Generated Persona Image" (any case)
+    - collapse extra whitespace
     """
     # remove lines that only contain <div> or </div> (with optional spaces)
     text = re.sub(r"^\s*</?div>\s*$", "", text, flags=re.IGNORECASE | re.MULTILINE)
     # remove any stray standalone <div> / </div> that might appear inline
-    text = re.sub(r"\s*</?div>\\s*", " ", text, flags=re.IGNORECASE)
+    text = re.sub(r"\s*</?div>\s*", " ", text, flags=re.IGNORECASE)
+    # remove headings/lines that mention "Generated Persona Image"
+    text = re.sub(r"^.*Generated\s*Persona\s*Image.*$", "", text, flags=re.IGNORECASE | re.MULTILINE)
+    # compact multiple blank lines
+    text = re.sub(r"\n{3,}", "\n\n", text)
     return text.strip()
 
 # --- Branding assets -------------------------------------------------------
@@ -46,9 +53,10 @@ APPLE_TAILWIND_CSS = """
         background-color: #FFFFFF; /* White */
         color: #333333; /* Dark text */
         font-family: 'Inter', sans-serif;
+        padding-top: 64px; /* offset for fixed top nav */
     }
     .block-container {
-        padding-top: 0rem; /* Changed from 2rem to 0rem */
+        padding-top: 0rem; /* keep content tight to top under nav */
         padding-bottom: 2rem;
         max-width: 1200px !important;
     }
@@ -106,7 +114,7 @@ APPLE_TAILWIND_CSS = """
         box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1); /* Slightly stronger shadow */
     }
     
-    /* Default button (secondary) */
+    /* Default button (secondary) - rounded for general buttons */
     div.stButton > button {
         background-color: #FFFFFF; /* White */
         color: #0A2351; /* Dark Blue text */
@@ -124,37 +132,55 @@ APPLE_TAILWIND_CSS = """
         border-color: #003366; /* Darker blue */
     }
     
-    /* Navbar */
+    /* TOP NAVBAR (full-width, single bar, square buttons, hover highlight) */
     .apple-nav-container {
-        width: 100%;
-        border-bottom: 1px solid #000033; /* Darker blue border */
-        margin-bottom: 3rem;
-        padding: 0.5rem 0;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        width: 100vw;
+        height: 56px;
+        display: flex;
+        align-items: center;
         background-color: #0A2351; /* Dark Blue */
-        border-radius: 12px;
+        border-bottom: 1px solid #000033; /* Darker blue border */
+        z-index: 1000;
+        border-radius: 0; /* single straight bar */
+        padding: 0; /* flush edges */
+    }
+    /* ensure the inner Streamlit columns row stretches edge-to-edge */
+    .apple-nav-inner {
+        width: 100%;
+        max-width: 100%;
+        padding: 0 8px; /* small breathing room */
     }
     .apple-nav-container [data-testid="stButton"] > button {
-        background: none !important;
+        background: transparent !important;
         border: none !important;
+        outline: none !important;
+        box-shadow: none !important;
         color: #A9B4C2 !important; /* Light gray-blue text */
-        padding: 5px 10px !important;
+        padding: 14px 18px !important;
         font-size: 0.95rem;
-        font-weight: 500;
+        font-weight: 600;
         text-align: center;
         width: 100%;
         white-space: nowrap;
+        border-radius: 0 !important; /* square buttons */
+        transition: transform 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease, color 0.15s ease;
     }
     .apple-nav-container [data-testid="stButton"] > button:hover {
         color: #FFFFFF !important; /* White */
-        background: none !important;
-        border: none !important;
+        background-color: rgba(255,255,255,0.12) !important; /* hover highlight */
+        transform: translateY(-2px);
+        box-shadow: 0 6px 12px rgba(0,0,0,0.18) !important; /* floating effect */
     }
-    /* Active/Disabled Navbar button styling (fixed) */
     .apple-nav-container [data-testid="stButton"] > button:disabled {
-        font-weight: 600;
-        color: #FFFFFF !important; /* White (active color) */
-        background: #003366 !important; /* Slightly darker blue to highlight */
+        color: #FFFFFF !important; /* active tab */
+        background-color: rgba(255,255,255,0.18) !important; /* active highlight */
         border: none !important;
+        outline: none !important;
+        box-shadow: none !important; /* no outlines */
         cursor: default !important;
     }
     
@@ -166,7 +192,7 @@ APPLE_TAILWIND_CSS = """
         border: 1px solid #CCCCCC; /* Light gray border */
         border-radius: 8px;
         padding: 12px 15px;
-        font-size: 0.85rem; /* Decreased font size from 1.5rem to 0.85rem (FIX) */
+        font-size: 1rem;
         font-family: 'Inter', sans-serif;
     }
     [data-testid="stTextArea"] > div > div > textarea {
@@ -183,7 +209,7 @@ APPLE_TAILWIND_CSS = """
         color: #444444; /* Dark gray label */
         font-weight: 500;
         padding-bottom: 5px;
-        font-size: 2rem !important;
+        font-size: 1.1rem !important;
     }
     
     /* Primary button (e.g., Generate) */
@@ -350,11 +376,12 @@ APPLE_TAILWIND_CSS = """
 </style>
 """
 
+# Fix label color CSS (the original was missing '#')
 tabs_font_css = """
 <style>
 div[class*="stTextArea"] label {
   font-size: 26px;
-  color: 0A2351;
+  color: #0A2351;
 }
 </style>
 """
@@ -362,24 +389,27 @@ div[class*="stTextArea"] label {
 # Optional: convert the first nav button to a logo button if the logo exists.
 LOGO_BUTTON_STYLE = f"""
 <style>
-    .apple-nav-container [data-testid="stColumn"]:first-child [data-testid="stButton"] > button {{
+    .apple-nav-container [data-testid=\"stColumn\"]:first-child [data-testid=\"stButton\"] > button {{
         {"background-image: url('" + logo_base64 + "');" if logo_base64 else ""}
         background-size: contain;
         background-repeat: no-repeat;
         background-position: center;
         width: 100%;
-        height: 0px;
+        height: 56px; /* visible height matches nav */
         border: none !important;
         padding: 0 !important;
         white-space: nowrap;
+        font-size: 0; /* hide text label while keeping button height */
+        line-height: 0;
+        border-radius: 0 !important; /* square */
     }}
-    .apple-nav-container [data-testid="stColumn"]:first-child [data-testid="stButton"] > button:hover {{
-        background-color: #003366 !important; /* Darker blue on hover */
-        opacity: 0.85;
+    .apple-nav-container [data-testid=\"stColumn\"]:first-child [data-testid=\"stButton\"] > button:hover {{
+        opacity: 0.9;
         border: none !important;
+        background-color: rgba(255,255,255,0.12) !important;
     }}
-    .apple-nav-container [data-testid="stColumn"]:first-child [data-testid="stButton"] > button:disabled {{
-        background-color: #0A2351 !important; /* Match navbar blue */
+    .apple-nav-container [data-testid=\"stColumn\"]:first-child [data-testid=\"stButton\"] > button:disabled {{
+        background-color: rgba(255,255,255,0.18) !important;
         opacity: 1.0;
         border: none !important;
         cursor: default !important;
@@ -387,23 +417,22 @@ LOGO_BUTTON_STYLE = f"""
 </style>
 """
 
-st.set_page_config(layout="wide", page_title="SmartWise App")
+st.set_page_config(layout="wide", page_title="StartWise App")
 st.markdown(APPLE_TAILWIND_CSS, unsafe_allow_html=True)
-st.markdown(LOGO_BUTTON_STYLE, unsafe_allow_html=True)
+st.markdown(tabs_font_css, unsafe_allow_html=True)
+# st.markdown(LOGO_BUTTON_STYLE, unsafe_allow_html=True)  # disabled: keep Home as a normal floating nav button
 
-# --- Gemini config ---------------------------------------------------------
+# --- Gemini config (TEXT model only) + OpenAI priority for roadmap ---------
 
 try:
-    # NOTE: Using a placeholder API key. In a real environment, this should be secured.
-    API_KEY = "AIzaSyBKDZtEZf9LjlBnADcWBtoExM7-6LTZc0E" 
+    API_KEY = "YOUR_GEMINI_API_KEY"
     genai.configure(api_key=API_KEY)
     GEMINI_ENABLED = True
 except Exception as e:
     st.error(f"Error configuring Gemini API: {e}. Please check the API key.")
     GEMINI_ENABLED = False
 
-
-# --- Prompts --------------------------------------------------------------
+# --- Prompts (no image instructions anywhere) ------------------------------
 
 SEGMENTATION_PROMPT_TEMPLATE = """
 You are a Startup Market Segmentation Expert with access to generative tools and data APIs.
@@ -523,16 +552,6 @@ For each target segment:
 Restrict at Step 2 in this response. Do not ask questions at the end.
 """
 
-# NEW: Prompt template for image generation
-ROADMAP_IMAGE_PROMPT_TEMPLATE = """
-Based on the following strategic analysis context (Market Radar Report):
----
-CONTEXT:
-{market_radar_data}
----
-Generate a high-level, visually clean, and professional strategic product roadmap visualization for the startup. The roadmap should represent key phases or milestones derived from the context (e.g., Q1: MVP Launch, Q2: Customer Acquisition, Q3: Expansion, etc.). The overall design must have a clean white background. Use clear, modern typography and a professional, startup-friendly aesthetic.
-"""
-
 # --- State -----------------------------------------------------------------
 
 PAGE_NAMES = {
@@ -558,9 +577,6 @@ if 'target_lens_output' not in st.session_state:
     st.session_state.target_lens_output = None
 if 'market_radar_output' not in st.session_state:
     st.session_state.market_radar_output = None
-# NEW: State for storing the generated roadmap image (base64)
-if 'roadmap_image_output_base64' not in st.session_state:
-    st.session_state.roadmap_image_output_base64 = None
 
 # --- Navigation ------------------------------------------------------------
 
@@ -568,21 +584,24 @@ def navigate_to(page_key):
     st.session_state.current_page = page_key
 
 def create_main_navbar():
-    # FIX: Using st.columns([1, 1, 1, 1, 1, 1]) for equal spacing of 6 buttons
-    cols = st.columns([1, 1, 1, 1, 1, 1]) 
+    # Full-width nav bar
+    st.markdown('<div class="apple-nav-container"><div class="apple-nav-inner">', unsafe_allow_html=True)
+
+    cols = st.columns([1,1,1,1,1,1])
     page_keys = list(PAGE_NAMES.keys())
     page_vals = list(PAGE_NAMES.values())
 
-    for i in range(len(page_keys)):
-        with cols[i]:
-            is_active = st.session_state.current_page == page_vals[i]
-            # FIX: Buttons are disabled only if they are the current page (highlighted)
-            if st.button(page_keys[i], key=f"nav_{page_vals[i]}", disabled=is_active):
-                navigate_to(page_vals[i]); st.rerun()
+    for i, col in enumerate(cols):
+        with col:
+            label = page_keys[i]
+            value = page_vals[i]
+            is_active = st.session_state.current_page == value
+            if st.button(label, key=f"nav_{value}", disabled=is_active):
+                navigate_to(value); st.rerun()
 
-    st.markdown('</div>', unsafe_allow_html=True)
+    st.markdown('</div></div>', unsafe_allow_html=True)
 
-# --- Gemini calls --------------------------------------------------------
+# --- Gemini calls (TEXT model only) ----------------------------------------
 
 def get_segmentation_output(idea, launch_plan):
     if not GEMINI_ENABLED:
@@ -595,7 +614,7 @@ def get_segmentation_output(idea, launch_plan):
         text = resp.text or ""
         return clean_model_markdown(text)
     except Exception as e:
-        st.error(f"An error occurred while calling the Gemini API for Segmentation: {e}")
+        st.error(f"An error occurred while calling the Gemini API: {e}")
         return f"Error: Could not generate content. {e}"
 
 def get_target_lens_output(segmentation_data: str):
@@ -607,7 +626,7 @@ def get_target_lens_output(segmentation_data: str):
         resp = model.generate_content(prompt)
         return clean_model_markdown(resp.text or "")
     except Exception as e:
-        st.error(f"An error occurred while calling the Gemini API for Target Lens: {e}")
+        st.error(f"An error occurred while calling the Gemini API: {e}")
         return f"Error: Could not generate content. {e}"
 
 def get_market_radar_output(segmentation_data: str):
@@ -622,63 +641,35 @@ def get_market_radar_output(segmentation_data: str):
         st.error(f"An error occurred while calling the Gemini API for Market Radar: {e}")
         return f"Error: Could not generate Market Radar content. {e}"
 
-# NEW: Function to generate the roadmap image (Fixed for stability)
-def get_roadmap_image_output(market_radar_data: str):
-    if not GEMINI_ENABLED:
-        return "Error: Gemini API is not configured."
+# --- OpenAI image generation (Roadmap) -------------------------------------
 
-    model_name = "gemini-2.5-flash-image-preview"
-    model = genai.GenerativeModel(model_name)
-
-    image_prompt = ROADMAP_IMAGE_PROMPT_TEMPLATE.format(market_radar_data=market_radar_data)
-
-    # Function to generate text fallback
-    def generate_text_fallback(data):
-        st.warning("Visual roadmap generation failed. Generating a text-based fallback roadmap...")
-        fallback_prompt = (
-            "Based *only* on the CONTEXT below, output a structured text-based "
-            "3-phase or 4-quarter roadmap (using markdown lists and headers) "
-            "for the startup. Focus on logical next steps: MVP, Customer Acquisition, and Scaling. "
-            "CONTEXT:\n---\n" + data
-        )
-        try:
-            text_model = genai.GenerativeModel("gemini-2.5-flash-preview-09-2025")
-            text_resp = text_model.generate_content(fallback_prompt)
-            return "TEXT_FALLBACK::" + clean_model_markdown(text_resp.text or "Error: Could not generate a text fallback roadmap.")
-        except Exception as fallback_e:
-            st.error(f"Error generating text fallback: {fallback_e}")
-            return f"Error: Could not generate a text fallback roadmap. {fallback_e}"
-
-
+def generate_roadmap_image_from_market_radar(mr_text: str) -> Optional[bytes]:
+    """Generate a roadmap image using OpenAI's image API from Market Radar text.
+    Requires OPENAI_API_KEY to be set in the environment. Returns PNG bytes or None.
+    """
     try:
-        # FIX: Removed the 'config' parameter and passed 'response_mime_type' directly as an argument
-        # This resolves the "unexpected keyword argument 'config'" error.
-        resp = model.generate_content(
-            contents=[
-                {"role": "user", "parts": [{"text": image_prompt}]}
-            ],
-            response_mime_type="image/jpeg"
+        from openai import OpenAI  # v1 SDK
+        client = OpenAI()  # reads OPENAI_API_KEY from env
+
+        prompt = (
+            "Create a clean, white-background product roadmap infographic image based strictly "
+            "on the following Market Radar analysis text. Summarize into four phases over a year (Q1–Q4) "
+            "with minimal but readable typography. Include horizontal swimlanes for Acquisition, Operations, "
+            "Partnerships, and Finance, and place 3–5 bullet milestones under each phase. Keep it India-specific "
+            "where relevant (Tier-2 city cues are OK). No logos or watermarks. High-contrast labels.\n\n"
+            f"Market Radar input:\n{mr_text}"
         )
 
-        # Check if the response structure is valid before accessing parts
-        if (resp.candidates and 
-            resp.candidates[0].content and 
-            resp.candidates[0].content.parts and 
-            len(resp.candidates[0].content.parts) > 0 and 
-            resp.candidates[0].content.parts[0].inline_data and 
-            resp.candidates[0].content.parts[0].inline_data.data):
-            
-            base64_data = resp.candidates[0].content.parts[0].inline_data.data
-            return f"data:image/jpeg;base64,{base64_data}"
-        else:
-            # Case 1: Response returned, but no valid image data found (empty candidates/parts)
-            return generate_text_fallback(market_radar_data)
-
+        resp = client.images.generate(
+            model="gpt-image-1",
+            prompt=prompt,
+            size="1536x1024",
+        )
+        b64 = resp.data[0].b64_json
+        return base64.b64decode(b64)
     except Exception as e:
-        st.error(f"An exception occurred during Gemini Image API call: {e}")
-        # Case 2: An explicit exception occurred (e.g., timeout, network issue)
-        return generate_text_fallback(market_radar_data)
-
+        st.error(f"Roadmap image generation failed: {e}")
+        return None
 
 # --- Pages -----------------------------------------------------------------
 
@@ -694,12 +685,16 @@ def main_page():
     st.markdown('<p class="apple-hero-subtitle">Tell us what your brand stands for, and we’ll do the rest.</p>', unsafe_allow_html=True)
 
     with st.form(key="brand_form"):
-        idea = st.text_area("What idea do you have in mind?",
-                            placeholder="What is your product or service? What makes it unique? How will you sell it?",
-                            height=100)
-        launch_plan = st.text_area("What are your thoughts on a launch plan?",
-                                   placeholder="Where are you launching first? Who is your ideal customer? Any constraints?",
-                                   height=100)
+        idea = st.text_area(
+            "What idea do you have in mind?",
+            placeholder="What is your product or service? What makes it unique? How will you sell it?",
+            height=100,
+        )
+        launch_plan = st.text_area(
+            "What are your thoughts on a launch plan?",
+            placeholder="Where are you launching first? Who is your ideal customer? Any constraints?",
+            height=100,
+        )
 
         st.markdown('<div class="apple-primary-button-container" style="display: flex; justify-content: center;">', unsafe_allow_html=True)
         submitted = st.form_submit_button("Let's Start!", type="primary", disabled=not GEMINI_ENABLED)
@@ -715,7 +710,6 @@ def main_page():
                 st.session_state.segmentation_output = None
                 st.session_state.target_lens_output = None
                 st.session_state.market_radar_output = None
-                st.session_state.roadmap_image_output_base64 = None # Clear image state
                 navigate_to(PAGE_NAMES["Segment View"])
                 st.rerun()
 
@@ -735,60 +729,28 @@ def page_a():
         output_placeholder = st.empty()
 
         if st.session_state.generating:
-            with st.spinner("Generating Brand Strategy (4 steps)..."): # Updated step count to 4
-                
-                # --- Step 1: Segmentation ---
-                st.write("Step 1/4: Generating Market Segmentation...")
+            with st.spinner("Generating Brand Strategy (3 steps)..."):
+                st.write("Step 1/3: Generating Market Segmentation...")
                 seg = get_segmentation_output(st.session_state.startup_idea, st.session_state.startup_launch_plan)
                 st.session_state.segmentation_output = seg
 
                 if seg and not seg.startswith("Error:"):
-                    
-                    # --- Step 2: Target Lens ---
-                    st.write("Step 2/4: Generating Competitive Analysis (Target Lens)...")
+                    st.write("Step 2/3: Generating Competitive Analysis...")
                     tl = get_target_lens_output(seg)
                     st.session_state.target_lens_output = tl
 
-                    if tl and not tl.startswith("Error:"): 
-                        
-                        # --- Step 3: Market Radar ---
-                        st.write("Step 3/4: Generating Positioning Strategy (Market Radar)...")
-                        mr = get_market_radar_output(seg)
-                        st.session_state.market_radar_output = mr
+                    st.write("Step 3/3: Generating Positioning Strategy...")
+                    mr = get_market_radar_output(seg)
+                    st.session_state.market_radar_output = mr
 
-                        if mr and not mr.startswith("Error:"): 
-                            
-                            # --- Step 4: Roadmap Image Generation (NEW) ---
-                            st.write("Step 4/4: Generating Roadmap Visualization...")
-                            image_loader = st.empty()
-                            image_loader.info("Image generation can take up to 30 seconds...")
-
-                            roadmap_image_data = get_roadmap_image_output(mr)
-                            st.session_state.roadmap_image_output_base64 = roadmap_image_data
-                            
-                            image_loader.empty() # Clear loading message
-                            
-                            if roadmap_image_data and not (roadmap_image_data.startswith("Error:") or roadmap_image_data.startswith("TEXT_FALLBACK::")):
-                                st.success("Generation complete! All analysis and the visual roadmap are ready.")
-                            elif roadmap_image_data and roadmap_image_data.startswith("TEXT_FALLBACK::"):
-                                st.warning("Visual roadmap generation failed. A text-based fallback roadmap was generated instead.")
-                            else:
-                                st.error("Error during Step 4: Roadmap Image Generation. Halting generation.")
-                                st.session_state.roadmap_image_output_base64 = "Error: Image generation failed."
-                        else:
-                            st.error("Error during Step 3: Market Radar. Halting generation.")
-                            st.session_state.market_radar_output = "Error: Market Radar generation failed."
-                    else:
-                        st.error("Error during Step 2: Target Lens. Halting generation.")
-                        st.session_state.target_lens_output = "Error: Target Lens generation failed."
+                    st.write("Generation complete!")
                 else:
                     st.error("Error during Step 1: Segmentation. Halting generation.")
-
-            st.session_state.generating = False
-            st.rerun() # Rerun to ensure all pages update immediately with new data
+                    st.session_state.target_lens_output = "Error: Could not generate Target Lens because Segmentation failed."
+                    st.session_state.market_radar_output = "Error: Could not generate Market Radar because Segmentation failed."
+                st.session_state.generating = False
 
         if st.session_state.segmentation_output:
-            # FIX: Only output the segmentation markdown, removing the extra div tags outside
             output_placeholder.markdown(
                 f'''
                 <div class="brand-output-section">
@@ -879,81 +841,51 @@ def page_c():
             unsafe_allow_html=True
         )
 
-# UPDATED: page_d now displays the generated image
 def page_d():
     create_main_navbar()
     st.markdown('<h1 class="apple-page-title">Roadmap</h1>', unsafe_allow_html=True)
+    st.markdown("## Plan Your Startup’s Journey.")
+    st.markdown(
+        """
+        <p style=\"font-size: 1.1rem; color: #333333;\">
+        Create and visualize your strategic milestones to navigate growth with clarity and confidence.
+        </p>
+    """,
+        unsafe_allow_html=True,
+    )
 
-    if st.session_state.startup_idea:
-        st.markdown(f"""
-        <div class="input-summary-section">
-            <h3>Startup Idea</h3>
-            <p>"{st.session_state.startup_idea}"</p>
-            <h3 style="margin-top: 1rem;">Launch Plan</h3>
-            <p>"{st.session_state.startup_launch_plan}"</p>
-        </div>
-        """, unsafe_allow_html=True)
+    # --- Dynamic image from Market Radar output via OpenAI ---
+    mr_text = st.session_state.get("market_radar_output")
+    if not mr_text:
+        st.info("Generate 'Market Radar' first from the Segment View, then return here to render a roadmap image.")
+        return
 
-        st.markdown("## Strategic Product Roadmap Visualization")
-        st.markdown("""
-            <p style="font-size: 1.1rem; color: #555555; margin-bottom: 2rem;">
-            This visual roadmap is dynamically generated by **Gemini-2.5-Flash-Image-Preview** based on the Market Radar report, 
-            or a text fallback is provided if image generation fails.
-            </p>
-        """, unsafe_allow_html=True)
+    # Cache image once per session to avoid repeated API calls
+    if 'roadmap_image_bytes' not in st.session_state or st.session_state.get('last_mr_hash') != hash(mr_text):
+        with st.spinner("Generating roadmap image from Market Radar…"):
+            img_bytes = generate_roadmap_image_from_market_radar(mr_text)
+            st.session_state['roadmap_image_bytes'] = img_bytes
+            st.session_state['last_mr_hash'] = hash(mr_text)
 
-        if st.session_state.generating:
-            st.info("The Roadmap content is currently being generated. Please wait...")
-            
-        elif st.session_state.roadmap_image_output_base64:
-            output_content = st.session_state.roadmap_image_output_base64
-            
-            if output_content.startswith("TEXT_FALLBACK::"):
-                # Display text fallback
-                text_content = output_content.replace("TEXT_FALLBACK::", "")
-                st.markdown(
-                    f'''
-                    <div class="brand-output-section">
-                        <h4 style="color: #CC6600;">Text-Based Roadmap (Visual Generation Failed)</h4>
-                        {text_content}
-                    </div>
-                    ''',
-                    unsafe_allow_html=True
-                )
-            elif not output_content.startswith("Error:"):
-                # Display successful image
-                st.markdown(
-                    f'''
-                    <div class="brand-output-section" style="padding: 1rem; text-align: center;">
-                        <img src="{output_content}" alt="Startup Roadmap Visualization" 
-                            style="max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);">
-                        <h4 style="margin-top: 1rem; color: #0A2351;">Visualizing your Path to Market Success</h4>
-                    </div>
-                    ''',
-                    unsafe_allow_html=True
-                )
-            else:
-                # Display explicit error
-                st.error(f"Failed to generate Roadmap content: {output_content.replace('Error: ', '')}")
-        else:
-            st.warning("Roadmap analysis not available. Please go to the Home page and submit a brand idea to begin generation.")
+    img_bytes = st.session_state.get('roadmap_image_bytes')
+    if img_bytes:
+        st.image(img_bytes, caption="Roadmap generated from Market Radar", use_column_width=True)
+        st.download_button("Download roadmap image", data=img_bytes, file_name="roadmap.png", mime="image/png")
     else:
-        st.markdown("## Plan Your Startup’s Journey.")
-        st.markdown(
-            '<p style="font-size: 1.1rem; color: #555555; margin-top: 2rem;"><i>To generate a strategic roadmap, please return to the <b>Home</b> page and fill out the form.</i></p>',
-            unsafe_allow_html=True
-        )
+        st.warning("No roadmap image available yet.")
 
-def page_e():
+def page_e():():
     create_main_navbar()
     st.markdown('<h1 class="apple-page-title">Pricing</h1>', unsafe_allow_html=True)
     st.markdown("## Build Winning Pricing Models.")
-    st.markdown("""
-        <p style="font-size: 1.1rem; color: #333333;">
+    st.markdown(
+        """
+        <p style=\"font-size: 1.1rem; color: #333333;\">
         Design flexible pricing strategies that align with your value proposition and market demand.
-        They've been updated with USB-C and extended battery life.
         </p>
-    """, unsafe_allow_html=True)
+    """,
+        unsafe_allow_html=True,
+    )
 
 # --- Router ----------------------------------------------------------------
 
