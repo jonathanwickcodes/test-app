@@ -426,7 +426,7 @@ if logo_base64: # Only inject if logo was found
 # Configure the API key from Streamlit secrets
 try:
     # API_KEY = st.secrets["GEMINI_API_KEY"] # Replaced secret with hardcoded key
-    API_KEY = "AIzaSyDkoQ2M7c7EcUFpLBTMvFlAXjMg1f2TUHI"
+    API_KEY = "AIzaSyA2KlGc_qfH1GsSgiPL1CmUZIEyC12BIvc"
     genai.configure(api_key=API_KEY)
     # model = genai.GenerativeModel("gemini-2.5-flash-preview-09-2025") # Removed: Model will be initialized in each function
     GEMINI_ENABLED = True
