@@ -649,7 +649,7 @@ def main_page():
                                    height=100)
 
         st.markdown('<div class="apple-primary-button-container" style="display: flex; justify-content: center;">', unsafe_allow_html=True)
-        submitted = st.form_submit_button("Let's Start!", type="info", disabled=not GEMINI_ENABLED)
+        submitted = st.form_submit_button("Let's Start!", type="primary", disabled=not GEMINI_ENABLED)
         st.markdown('</div>', unsafe_allow_html=True)
 
         if submitted:
