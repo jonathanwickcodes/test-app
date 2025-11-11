@@ -691,12 +691,15 @@ def main_page():
     logo_html = f'<img src="{logo_base64}" alt="StartWise Logo">' if logo_base64 else ""
     st.markdown(f"""
     <div class="apple-hero-container">
-        {logo_html}
+    	<div class="apple-hero-left">
+       	 {logo_html}
+    	</div>
+    <div class="apple-hero-right">
         <div class="apple-hero-title">Build smarter, launch faster.</div>
+        <div class="apple-hero-subtitle">Tell us what your brand stands for, and we’ll do the rest.</div>
+    </div>
     </div>
     """, unsafe_allow_html=True)
-    st.markdown('<p class="apple-hero-subtitle">Tell us what your brand stands for, and we’ll do the rest.</p>', unsafe_allow_html=True)
-
     with st.form(key="brand_form"):
         idea = st.text_area("What idea do you have in mind?",
                             placeholder="What is your product or service? What makes it unique? How will you sell it?",
