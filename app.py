@@ -909,6 +909,15 @@ def page_d():
             output_content = st.session_state.roadmap_image_output_base64
             
             if output_content.startswith("TEXT_FALLBACK::"):
+                # --- MODIFICATION: Display the pricing image ---
+                # Check if the file exists in the root directory
+                if os.path.exists("pricing.png"):
+                # Display the image, making it fit the column width
+                st.image("roadmap.png", use_column_width=True)
+                else:
+                # Show a warning if the image is missing, but don't break the app
+                st.warning("Image 'pricing.png' not found. Please make sure it's in the root directory.")
+                # --- END MODIFICATION ---
                 # Display text fallback
                 text_content = output_content.replace("TEXT_FALLBACK::", "")
                 st.markdown(
@@ -947,7 +956,11 @@ def page_d():
 def page_e():
     create_main_navbar()
     st.markdown('<h1 class="apple-page-title">Pricing</h1>', unsafe_allow_html=True)
-    
+        st.markdown("## Build Winning Pricing Models.")
+    st.markdown("""
+        <p style="font-size: 1.1rem; color: #333333;">
+        Design flexible pricing strategies that align with your value proposition and market demand.
+        </p>
     # --- MODIFICATION: Display the pricing image ---
     # Check if the file exists in the root directory
     if os.path.exists("pricing.png"):
@@ -957,12 +970,6 @@ def page_e():
         # Show a warning if the image is missing, but don't break the app
         st.warning("Image 'pricing.png' not found. Please make sure it's in the root directory.")
     # --- END MODIFICATION ---
-
-    st.markdown("## Build Winning Pricing Models.")
-    st.markdown("""
-        <p style="font-size: 1.1rem; color: #333333;">
-        Design flexible pricing strategies that align with your value proposition and market demand.
-        </p>
     """, unsafe_allow_html=True)
 
 # --- Router ----------------------------------------------------------------
