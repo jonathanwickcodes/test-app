@@ -956,7 +956,7 @@ def page_d():
 def page_e():
     create_main_navbar()
     st.markdown('<h1 class="apple-page-title">Pricing</h1>', unsafe_allow_html=True)
-        st.markdown("## Build Winning Pricing Models.")
+    st.markdown("## Build Winning Pricing Models.")
     st.markdown("""
         <p style="font-size: 1.1rem; color: #333333;">
         Design flexible pricing strategies that align with your value proposition and market demand.
