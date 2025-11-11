@@ -1,4 +1,3 @@
-e/D
 import streamlit as st
 import time
 import google.generativeai as genai
