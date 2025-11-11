@@ -874,7 +874,7 @@ def page_d():
     else:
         st.warning("No roadmap image available yet.")
 
-def page_e():():
+def page_e():
     create_main_navbar()
     st.markdown('<h1 class="apple-page-title">Pricing</h1>', unsafe_allow_html=True)
     st.markdown("## Build Winning Pricing Models.")
