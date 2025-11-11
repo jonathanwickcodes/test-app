@@ -26,8 +26,6 @@ logo_base64 = get_image_as_base64(LOGO_FILE)
 # The core CSS block to inject. This sets the dark mode theme,
 # uses the Inter font (a common choice for modern, clean UI),
 # and provides custom classes for the Apple-like components.
-CSS backup
-
 
 APPLE_TAILWIND_CSS = """
 <style>
