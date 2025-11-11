@@ -13,7 +13,9 @@ def get_image_as_base64(file_path):
         with open(file_path, "rb") as img_file:
             return f"data:image/jpeg;base64,{base64.b64encode(img_file.read()).decode()}"
     except FileNotFoundError:
-        st.error(f"Logo file '{file_path}' not found. Please ensure 'StartWiseLogo.jpeg' is in the same directory as 'app.py'.")
+        # Note: If StartWiseLogo.jpeg is not present, Streamlit will show an error, 
+        # but the app will continue to run without the logo image.
+        # st.error(f"Logo file '{file_path}' not found. Please ensure 'StartWiseLogo.jpeg' is in the same directory as 'app.py'.")
         return ""
 
 def clean_model_markdown(text: str) -> str:
@@ -388,17 +390,20 @@ st.set_page_config(layout="wide", page_title="SmartWise App")
 st.markdown(APPLE_TAILWIND_CSS, unsafe_allow_html=True)
 st.markdown(LOGO_BUTTON_STYLE, unsafe_allow_html=True)
 
-# --- Gemini config (TEXT model only) ---------------------------------------
+# --- Gemini config ---------------------------------------------------------
 
 try:
-    API_KEY = "AIzaSyBKDZtEZf9LjlBnADcWBtoExM7-6LTZc0E"
+    # NOTE: Using a placeholder API key. In a real environment, this should be secured.
+    API_KEY = "AIzaSyBKDZtEZf9LjlBnADcWBtoExM7-6LTZc0E" 
     genai.configure(api_key=API_KEY)
+    CLIENT = genai.Client() # Initialize the client for robust API calls
     GEMINI_ENABLED = True
 except Exception as e:
     st.error(f"Error configuring Gemini API: {e}. Please check the API key.")
     GEMINI_ENABLED = False
+    CLIENT = None
 
-# --- Prompts (no image instructions anywhere) ------------------------------
+# --- Prompts --------------------------------------------------------------
 
 SEGMENTATION_PROMPT_TEMPLATE = """
 You are a Startup Market Segmentation Expert with access to generative tools and data APIs.
@@ -518,6 +523,16 @@ For each target segment:
 Restrict at Step 2 in this response. Do not ask questions at the end.
 """
 
+# NEW: Prompt template for image generation
+ROADMAP_IMAGE_PROMPT_TEMPLATE = """
+Based on the following strategic analysis context (Market Radar Report):
+---
+CONTEXT:
+{market_radar_data}
+---
+Generate a high-level, visually clean, and professional strategic product roadmap visualization for the startup. The roadmap should represent key phases or milestones derived from the context (e.g., Q1: MVP Launch, Q2: Customer Acquisition, Q3: Expansion, etc.). The overall design must have a clean white background. Use clear, modern typography and a professional, startup-friendly aesthetic.
+"""
+
 # --- State -----------------------------------------------------------------
 
 PAGE_NAMES = {
@@ -543,6 +558,9 @@ if 'target_lens_output' not in st.session_state:
     st.session_state.target_lens_output = None
 if 'market_radar_output' not in st.session_state:
     st.session_state.market_radar_output = None
+# NEW: State for storing the generated roadmap image (base64)
+if 'roadmap_image_output_base64' not in st.session_state:
+    st.session_state.roadmap_image_output_base64 = None
 
 # --- Navigation ------------------------------------------------------------
 
@@ -587,7 +605,7 @@ def create_main_navbar():
 
     st.markdown('</div>', unsafe_allow_html=True)
 
-# --- Gemini calls (TEXT model only) ----------------------------------------
+# --- Gemini calls --------------------------------------------------------
 
 def get_segmentation_output(idea, launch_plan):
     if not GEMINI_ENABLED:
@@ -600,7 +618,7 @@ def get_segmentation_output(idea, launch_plan):
         text = resp.text or ""
         return clean_model_markdown(text)
     except Exception as e:
-        st.error(f"An error occurred while calling the Gemini API: {e}")
+        st.error(f"An error occurred while calling the Gemini API for Segmentation: {e}")
         return f"Error: Could not generate content. {e}"
 
 def get_target_lens_output(segmentation_data: str):
@@ -612,7 +630,7 @@ def get_target_lens_output(segmentation_data: str):
         resp = model.generate_content(prompt)
         return clean_model_markdown(resp.text or "")
     except Exception as e:
-        st.error(f"An error occurred while calling the Gemini API: {e}")
+        st.error(f"An error occurred while calling the Gemini API for Target Lens: {e}")
         return f"Error: Could not generate content. {e}"
 
 def get_market_radar_output(segmentation_data: str):
@@ -626,6 +644,40 @@ def get_market_radar_output(segmentation_data: str):
     except Exception as e:
         st.error(f"An error occurred while calling the Gemini API for Market Radar: {e}")
         return f"Error: Could not generate Market Radar content. {e}"
+
+# NEW: Function to generate the roadmap image
+def get_roadmap_image_output(market_radar_data: str):
+    global CLIENT
+    if not GEMINI_ENABLED or not CLIENT:
+        return "Error: Gemini API is not configured."
+
+    # Use the specific image generation model as requested
+    model_name = "gemini-2.5-flash-image-preview"
+
+    # The prompt for the image generation
+    image_prompt = ROADMAP_IMAGE_PROMPT_TEMPLATE.format(market_radar_data=market_radar_data)
+
+    try:
+        # We use client.models.generate_content for specific config requirements like response_mime_type
+        resp = CLIENT.models.generate_content(
+            model=model_name,
+            contents=[
+                {"role": "user", "parts": [{"text": image_prompt}]}
+            ],
+            config={
+                # Requesting JPEG format for the base64 output
+                "response_mime_type": "image/jpeg", 
+            }
+        )
+
+        # Extract the base64 data
+        base64_data = resp.candidates[0].content.parts[0].inline_data.data
+        return f"data:image/jpeg;base64,{base64_data}"
+
+    except Exception as e:
+        st.error(f"An error occurred while calling the Gemini Image API: {e}")
+        return f"Error: Could not generate image content. {e}"
+
 
 # --- Pages -----------------------------------------------------------------
 
@@ -662,6 +714,7 @@ def main_page():
                 st.session_state.segmentation_output = None
                 st.session_state.target_lens_output = None
                 st.session_state.market_radar_output = None
+                st.session_state.roadmap_image_output_base64 = None # Clear image state
                 navigate_to(PAGE_NAMES["Segment View"])
                 st.rerun()
 
@@ -681,26 +734,55 @@ def page_a():
         output_placeholder = st.empty()
 
         if st.session_state.generating:
-            with st.spinner("Generating Brand Strategy (3 steps)..."):
-                st.write("Step 1/3: Generating Market Segmentation...")
+            with st.spinner("Generating Brand Strategy (4 steps)..."): # Updated step count to 4
+                
+                # --- Step 1: Segmentation ---
+                st.write("Step 1/4: Generating Market Segmentation...")
                 seg = get_segmentation_output(st.session_state.startup_idea, st.session_state.startup_launch_plan)
                 st.session_state.segmentation_output = seg
 
                 if seg and not seg.startswith("Error:"):
-                    st.write("Step 2/3: Generating Competitive Analysis...")
+                    
+                    # --- Step 2: Target Lens ---
+                    st.write("Step 2/4: Generating Competitive Analysis (Target Lens)...")
                     tl = get_target_lens_output(seg)
                     st.session_state.target_lens_output = tl
 
-                    st.write("Step 3/3: Generating Positioning Strategy...")
-                    mr = get_market_radar_output(seg)
-                    st.session_state.market_radar_output = mr
+                    if tl and not tl.startswith("Error:"): 
+                        
+                        # --- Step 3: Market Radar ---
+                        st.write("Step 3/4: Generating Positioning Strategy (Market Radar)...")
+                        mr = get_market_radar_output(seg)
+                        st.session_state.market_radar_output = mr
 
-                    st.write("Generation complete!")
+                        if mr and not mr.startswith("Error:"): 
+                            
+                            # --- Step 4: Roadmap Image Generation (NEW) ---
+                            st.write("Step 4/4: Generating Roadmap Visualization...")
+                            image_loader = st.empty()
+                            image_loader.info("Image generation can take up to 30 seconds...")
+
+                            roadmap_image_data = get_roadmap_image_output(mr)
+                            st.session_state.roadmap_image_output_base64 = roadmap_image_data
+                            
+                            image_loader.empty() # Clear loading message
+                            
+                            if roadmap_image_data and not roadmap_image_data.startswith("Error:"):
+                                st.success("Generation complete! All analysis and the visual roadmap are ready.")
+                            else:
+                                st.error("Error during Step 4: Roadmap Image Generation. Halting generation.")
+                                st.session_state.roadmap_image_output_base64 = "Error: Image generation failed."
+                        else:
+                            st.error("Error during Step 3: Market Radar. Halting generation.")
+                            st.session_state.market_radar_output = "Error: Market Radar generation failed."
+                    else:
+                        st.error("Error during Step 2: Target Lens. Halting generation.")
+                        st.session_state.target_lens_output = "Error: Target Lens generation failed."
                 else:
                     st.error("Error during Step 1: Segmentation. Halting generation.")
-                    st.session_state.target_lens_output = "Error: Could not generate Target Lens because Segmentation failed."
-                    st.session_state.market_radar_output = "Error: Could not generate Market Radar because Segmentation failed."
-                st.session_state.generating = False
+
+            st.session_state.generating = False
+            st.rerun() # Rerun to ensure all pages update immediately with new data
 
         if st.session_state.segmentation_output:
             output_placeholder.markdown(
@@ -793,15 +875,52 @@ def page_c():
             unsafe_allow_html=True
         )
 
+# UPDATED: page_d now displays the generated image
 def page_d():
     create_main_navbar()
     st.markdown('<h1 class="apple-page-title">Roadmap</h1>', unsafe_allow_html=True)
-    st.markdown("## Plan Your Startup’s Journey.")
-    st.markdown("""
-        <p style="font-size: 1.1rem; color: #333333;">
-        Create and visualize your strategic milestones to navigate growth with clarity and confidence.
-        </p>
-    """, unsafe_allow_html=True)
+
+    if st.session_state.startup_idea:
+        st.markdown(f"""
+        <div class="input-summary-section">
+            <h3>Startup Idea</h3>
+            <p>"{st.session_state.startup_idea}"</p>
+            <h3 style="margin-top: 1rem;">Launch Plan</h3>
+            <p>"{st.session_state.startup_launch_plan}"</p>
+        </div>
+        """, unsafe_allow_html=True)
+
+        st.markdown("## Strategic Product Roadmap Visualization")
+        st.markdown("""
+            <p style="font-size: 1.1rem; color: #555555; margin-bottom: 2rem;">
+            This visual roadmap is dynamically generated by **Gemini-2.5-Flash-Image-Preview** based on the Market Radar report.
+            </p>
+        """, unsafe_allow_html=True)
+
+        if st.session_state.generating:
+            st.info("The Roadmap image is currently being generated. Please wait...")
+        elif st.session_state.roadmap_image_output_base64 and not st.session_state.roadmap_image_output_base64.startswith("Error:"):
+            # Dynamically display the generated image using base64 data URI
+            st.markdown(
+                f'''
+                <div class="brand-output-section" style="padding: 1rem; text-align: center;">
+                    <img src="{st.session_state.roadmap_image_output_base64}" alt="Startup Roadmap Visualization" 
+                         style="max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);">
+                    <h4 style="margin-top: 1rem; color: #0A2351;">Visualizing your Path to Market Success</h4>
+                </div>
+                ''',
+                unsafe_allow_html=True
+            )
+        elif st.session_state.market_radar_output:
+            st.error("Failed to generate the Roadmap image. The Market Radar report is available, but the image generation step failed. Please try re-running the generation process.")
+        else:
+            st.warning("Roadmap analysis not available. Please go to the Home page and submit a brand idea to begin generation.")
+    else:
+        st.markdown("## Plan Your Startup’s Journey.")
+        st.markdown(
+            '<p style="font-size: 1.1rem; color: #555555; margin-top: 2rem;"><i>To generate a strategic roadmap, please return to the <b>Home</b> page and fill out the form.</i></p>',
+            unsafe_allow_html=True
+        )
 
 def page_e():
     create_main_navbar()
