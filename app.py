@@ -28,346 +28,211 @@ logo_base64 = get_image_as_base64(LOGO_FILE)
 # and provides custom classes for the Apple-like components.
 APPLE_TAILWIND_CSS = """
 <style>
-    /* 1. Global Setup (Dark Mode and Font) */
+    /* 1. Global Setup (Light Mode and Font) */
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
-    
-    html, body, [data-testid="stAppViewContainer"] {
-        background-color: #000000; /* Pure Black for contrast */
-        color: #FFFFFF;
-        font-family: 'Inter', sans-serif;
+    body {
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        background-color: #FFFFFF; /* White background */
+        color: #333333; /* Dark text */
     }
-    
-    /* Center the main container content and maximize width */
-    .block-container {
-        padding-top: 2rem;
-        padding-bottom: 2rem;
-        max-width: 1200px !important;
+    .main {
+        background-color: #FFFFFF; /* White main content area */
     }
+    /* Hide Streamlit headers and footers */
+    header, footer {
+        visibility: hidden !important;
+    }
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar { width: 8px; }
+    ::-webkit-scrollbar-track { background: #F0F0F0; }
+    ::-webkit-scrollbar-thumb { background: #BBBBBB; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: #999999; }
 
-    /* 2. Custom Typography and Layout */
-    .apple-hero-title {
-        font-size: 4rem;
-        font-weight: 700;
-        line-height: 1.1;
-        /* text-align: center; <-- CHANGED */
-        text-align: left; 
-        /* margin-bottom: 1rem; <-- CHANGED */
-        margin-bottom: 0;
-        background: linear-gradient(180deg, #FFFFFF, #B0B0B0);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
+    /* 2. Custom Apple-like Navigation Bar */
+    .apple-navbar {
+        display: flex;
+        justify-content: space-between; /* Changed for logo + items */
+        align-items: center;
+        padding: 8px 16px;
+        background-color: #F8F8F8; /* Light glassy background */
+        border-bottom: 1px solid #E0E0E0; /* Subtle separator */
+        margin-bottom: 24px;
+        border-radius: 8px; /* Rounded corners for the bar */
     }
-
-    .apple-hero-subtitle {
-        font-size: 1.5rem;
-        font-weight: 400;
-        text-align: center;
-        color: #888888;
-        margin: 0 auto 3rem auto;
-    }
-    
-    /* --- NEW: Hero container with logo --- */
-    .apple-hero-container {
+    .apple-logo-container { /* NEW */
         display: flex;
         align-items: center;
-        justify-content: center;
-        gap: 1.5rem; /* Space between logo and text */
-        margin-bottom: 1rem;
+        gap: 10px; /* Space between logo and title */
     }
-    
-    .apple-hero-container img {
-        width: 90px;
-        height: 90px;
-        border-radius: 12px; 
-        flex-shrink: 0; /* Prevent logo from shrinking */
+    .apple-logo { /* NEW */
+        width: 32px; /* Logo size */
+        height: 32px;
+        border-radius: 4px; /* Slightly rounded logo */
+    }
+    .apple-logo-title { /* NEW */
+        font-size: 1.25rem; /* 20px */
+        font-weight: 600;
+        color: #111111; /* Dark text */
+        line-height: 1; /* Align text better */
+    }
+    .apple-nav-items { /* NEW: Container for nav items */
+         display: flex;
+         gap: 8px; /* Spacing between items */
+    }
+    .apple-nav-item {
+        color: #333333; /* Dark text */
+        background-color: transparent;
+        border: none;
+        padding: 8px 12px;
+        border-radius: 6px;
+        font-weight: 500;
+        font-size: 0.95rem; /* 15px */
+        text-decoration: none;
+        transition: background-color 0.2s, color 0.2s;
+        cursor: pointer;
+        display: flex; /* For icon alignment */
+        align-items: center; /* For icon alignment */
+        gap: 6px; /* Space between icon and text */
+    }
+    .apple-nav-item:hover {
+        background-color: #EFEFEF; /* Subtle light hover */
+        color: #000000;
+    }
+    .apple-nav-item.active {
+        background-color: #EBF5FF; /* Lighter Blue background */
+        color: #0059B3; /* Darker blue text */
+    }
+    .apple-nav-item.active:hover {
+        background-color: #DDEEFF; /* Slightly darker light blue on hover */
+    }
+    .apple-nav-item span { /* For emoji icons */
+        font-size: 1.1rem;
+    }
+    /* Fallback for nav items when it's a button (from st.page_link) */
+    button.apple-nav-item {
+         color: #333333;
+    }
+    button.apple-nav-item:hover {
+        color: #000000;
+    }
+    button.apple-nav-item.active {
+        color: #0059B3;
     }
 
-    .apple-page-title {
-        font-size: 3rem;
-        font-weight: 700;
-        line-height: 1.2;
-        margin-bottom: 2rem;
-        text-align: center;
-    }
-
-    /* 3. Card/Navigation Styling (Minimalist) - Kept for future use if needed */
+    /* 3. Custom Apple-like Cards */
     .apple-card {
-        background-color: #1a1a1a;
+        background-color: #FFFFFF; /* White card background */
         border-radius: 12px;
-        padding: 30px;
-        margin-bottom: 20px;
-        transition: transform 0.3s ease, box-shadow 0.3s ease;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
-        cursor: pointer;
+        padding: 24px;
+        border: 1px solid #E5E5E5; /* Subtle border */
+        margin-bottom: 16px;
+        transition: box-shadow 0.3s;
     }
-    
     .apple-card:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.5);
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05); /* Subtle lift */
     }
-    
-    /* 4. Default Button Styling (Pill shape) - Now used for nav */
-    div.stButton > button {
-        background-color: #1a1a1a; 
-        color: #FFFFFF;
-        border: 1px solid #333333;
-        border-radius: 9999px; /* Pill shape */
-        padding: 10px 20px;
-        font-size: 1rem;
-        font-weight: 500;
-        transition: background-color 0.2s, border-color 0.2s;
-        cursor: pointer;
-    }
-
-    div.stButton > button:hover {
-        background-color: #333333;
-        border-color: #555555;
-    }
-    
-    /* 5. NEW Horizontal Navigation Bar */
-    .apple-nav-container {
-        width: 100%;
-        border-bottom: 1px solid #2a2a2a; /* Subtle separator */
-        margin-bottom: 3rem;
-        padding: 0.5rem 0; /* Updated padding */
-        background-color: #101010; /* Dark "strip" background */
-        border-radius: 12px; /* Rounded corners */
-    }
-    
-    /* Style for the buttons within the nav */
-    .apple-nav-container [data-testid="stButton"] > button {
-        background: none !important;
-        border: none !important;
-        color: #888888 !important; /* Inactive link color */
-        padding: 5px 10px !important;
-        font-size: 0.95rem; /* Slightly smaller */
-        font-weight: 500;
-        text-align: center;
-        width: 100%;
-    }
-
-    .apple-nav-container [data-testid="stButton"] > button:hover {
-        color: #FFFFFF !important; /* White on hover */
-        background: none !important;
-        border: none !important;
-    }
-    
-    /* Style for the *disabled* (active) button */
-    .apple-nav-container [data-testid="stButton"] > button:disabled {
-        font-weight: 600; /* Bolder */
-        color: #FFFFFF !important; /* Active link color */
-        background: none !important;
-        border: none !important;
-        cursor: default !important;
-    }
-
-    /* 6. Form Element Styling */
-    [data-testid="stTextInput"] > div > div > input,
-    [data-testid="stTextArea"] > div > div > textarea {
-        background-color: #1a1a1a;
-        color: #FFFFFF;
-        border: 1px solid #333333;
-        border-radius: 8px; /* Slightly less rounded than pills */
-        padding: 12px 15px;
-        font-size: 1rem;
-        font-family: 'Inter', sans-serif;
-    }
-    
-    [data-testid="stTextArea"] > div > div > textarea {
-        min-height: 100px; /* Specific to text area */
-    }
-
-    /* NEW: Style for placeholders */
-    [data-testid="stTextInput"] > div > div > input::placeholder,
-    [data-testid="stTextArea"] > div > div > textarea::placeholder {
-        color: #777777;
-        font-size: 0.9rem;
-        font-style: italic;
-    }
-
-    /* Style for text input labels */
-    [data-testid="stTextInput"] label,
-    [data-testid="stTextArea"] label {
-        color: #AAAAAA;
-        font-weight: 500;
-        padding-bottom: 5px;
-        font-size: 1.3rem !important; /* Increased font size again to make it obvious */
-    }
-
-    /* 7. Primary Action Button (for 'Generate') - Primary Style */
-    .apple-primary-button-container div.stButton > button {
-        background-color: #007AFF !important; /* Apple Blue */
-        color: #FFFFFF !important;
-        border: none !important;
-        border-radius: 9999px; /* Pill shape */
-        padding: 12px 28px;
-        font-size: 1.1rem;
+    .apple-card h2 {
+        font-size: 1.75rem; /* 28px */
         font-weight: 600;
+        color: #111111;
+        margin-top: 0;
+        margin-bottom: 8px;
+    }
+    .apple-card p {
+        font-size: 1.1rem; /* 17.6px */
+        color: #555555; /* Medium grey for body */
+        line-height: 1.6;
+    }
+
+    /* 4. Page Title */
+    .apple-page-title {
+        font-size: 2.5rem; /* 40px */
+        font-weight: 700;
+        color: #111111;
+        margin-bottom: 24px;
+        margin-top: 0px; /* Reset top margin */
+    }
+
+    /* 5. Streamlit Component Overrides */
+
+    /* General Button */
+    .stButton > button {
+        background-color: #58A6FF; /* Lighter Blue */
+        color: #FFFFFF;
+        border: none;
+        border-radius: 8px;
+        padding: 10px 16px;
+        font-weight: 600;
+        font-size: 1rem;
         transition: background-color 0.2s;
-        width: auto; /* Allow it to size to content */
-        margin-top: 1.5rem;
     }
-    
-    .apple-primary-button-container div.stButton > button:disabled {
-        background: #333 !important; /* Disabled grey */
-        color: #FFFFFF !important;
-        border: none !important;
-    }
-
-    .apple-primary-button-container div.stButton > button:hover {
-        background-color: #0056b3 !important; /* Darker blue on hover */
-        color: #FFFFFF !important;
-        border: none !important;
-    }
-    
-    /* 8. Input Summary Styling */
-    .input-summary-section {
-        background-color: #101010; /* Darker than output */
-        border: 1px solid #2a2a2a;
-        border-radius: 12px;
-        padding: 1.5rem 2rem;
-        margin-bottom: 1.5rem;
-    }
-    .input-summary-section h3 {
-        font-size: 1rem;
-        font-weight: 600;
-        color: #AAAAAA; /* Grey label */
-        margin-bottom: 0.5rem;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-    }
-    .input-summary-section p {
-        font-size: 1.1rem;
-        color: #E0E0E0;
-        line-height: 1.6;
-        font-style: italic;
-        /* Use pre-wrap to respect newlines in the input */
-        white-space: pre-wrap;
-        word-wrap: break-word;
-    }
-
-    /* 9. Output Display Styling */
-    .brand-output-section {
-        background-color: #1a1a1a;
-        border-radius: 12px;
-        padding: 2rem 2.5rem;
-        margin-top: 2rem;
-        border: 1px solid #2a2a2a;
-    }
-
-    .brand-output-section h2 {
-        font-size: 1.5rem;
-        font-weight: 600;
+    .stButton > button:hover {
+        background-color: #4A90E2; /* Darker light blue */
         color: #FFFFFF;
-        border-bottom: 1px solid #333;
-        padding-bottom: 0.5rem;
-        margin-bottom: 1.5rem;
+    }
+    .stButton > button:focus {
+        box-shadow: 0 0 0 3px rgba(88, 166, 255, 0.5); /* Focus ring */
     }
 
-    .brand-output-section p {
-        font-size: 1rem;
-        color: #E0E0E0;
-        line-height: 1.6;
-        word-wrap: break-word; /* Added for long string wrapping */
-        overflow-wrap: break-word; /* Added for long string wrapping */
-    }
-    
-    .brand-output-section pre {
-        white-space: pre-wrap; /* Ensure text wraps */
-        word-wrap: break-word; /* Break long words */
-        background-color: #080808; /* Slightly darker */
-        padding: 1.5rem;
+    /* Text Input */
+    .stTextInput input[type="text"], .stTextInput input[type="password"] {
+        background-color: #F8F8F8;
+        color: #333333;
+        border: 1px solid #CCCCCC;
         border-radius: 8px;
-        color: #E0E0E0;
-        font-family: 'Menlo', 'Consolas', monospace;
-        font-size: 0.95rem;
-        line-height: 1.7;
+        padding: 10px 12px;
     }
-    
-    /* NEW: Styling for markdown generated by the new prompt */
-    .brand-output-section h3 {
-        font-size: 1.25rem;
-        font-weight: 600;
-        color: #FFFFFF;
-        margin-top: 2rem;
-        margin-bottom: 0.5rem;
-        border-bottom: 1px solid #333;
-        padding-bottom: 0.5rem;
+    .stTextInput input[type="text"]:focus, .stTextInput input[type="password"]:focus {
+        border-color: #58A6FF;
+        box-shadow: 0 0 0 3px rgba(88, 166, 255, 0.5);
     }
-    
-    .brand-output-section h4 {
-        font-size: 1.1rem;
-        font-weight: 600;
-        color: #E0E0E0;
-        margin-top: 1.5rem;
-        margin-bottom: 0.5rem;
-    }
-    
-    .brand-output-section ul {
-        list-style-type: disc;
-        margin-left: 20px;
-        padding-left: 0;
-        color: #E0E0E0;
-    }
-    
-    .brand-output-section li {
-        margin-bottom: 0.5rem;
-        line-height: 1.6;
-        word-wrap: break-word; /* Added for long string wrapping */
-        overflow-wrap: break-word; /* Added for long string wrapping */
+    /* Placeholder text color */
+    ::placeholder {
+        color: #999999 !important;
+        opacity: 1;
     }
 
-    .brand-output-section img {
+    /* Chat Input */
+    .stChatInput {
+        background-color: #F8F8F8;
+        border-top: 1px solid #E0E0E0;
+    }
+    .stChatInput input {
+        background-color: #FFFFFF;
+        color: #333333;
         border-radius: 8px;
-        margin-top: 1rem;
-        max-width: 300px;
-        border: 1px solid #333;
+        border: 1px solid #CCCCCC;
     }
 
-    /* NEW: Styling for tables to prevent overflow */
-    .brand-output-section table {
-        display: block; /* Makes the table scrollable */
-        width: 100%;
-        overflow-x: auto; /* Adds horizontal scroll if needed */
-        border-collapse: collapse;
-        margin-top: 1rem;
-        margin-bottom: 1rem;
-        border: 1px solid #333; /* Border to match theme */
-        border-radius: 8px; /* Match other elements */
+    /* Chat Messages */
+    [data-testid="chat-message-container"] {
+        border-radius: 12px;
+        padding: 16px;
+        margin-bottom: 12px;
+    }
+    /* Assistant message */
+    [data-testid="chat-message-container"]:not(:has(div[data-testid="chat-avatar-user"])) {
+        background-color: #F0F0F0; /* Light grey */
+    }
+    /* User message */
+    [data-testid="chat-message-container"]:has(div[data-testid="chat-avatar-user"]) {
+        background-color: #EBF5FF; /* Lighter Blue */
+        color: #111111; /* Dark text */
+    }
+    /* Make user message text dark */
+    [data-testid="chat-message-container"]:has(div[data-testid="chat-avatar-user"]) p,
+    [data-testid="chat-message-container"]:has(div[data-testid="chat-avatar-user"]) li {
+        color: #111111;
+    }
+    /* Code blocks in chat */
+    pre {
+        background-color: #F8F8F8 !important; /* Light background */
+        color: #333333 !important; /* Dark text */
+        border: 1px solid #E0E0E0;
+        border-radius: 8px;
+        padding: 12px;
     }
 
-    .brand-output-section th,
-    .brand-output-section td {
-        border-bottom: 1px solid #333; /* Cell borders */
-        padding: 0.75rem 1rem; /* Spacing */
-        color: #E0E0E0;
-        white-space: nowrap; /* Prevents text from wrapping and breaking layout */
-        border-left: 1px solid #333;
-    }
-    
-    .brand-output-section td:first-child,
-    .brand-output-section th:first-child {
-        border-left: none; /* Remove double border on the left */
-    }
-
-    .brand-output-section th {
-        background-color: #2a2a2a; /* Header background */
-        font-weight: 600;
-        text-align: left;
-    }
-    
-    .brand-output-section tr:first-child th:first-child {
-        border-top-left-radius: 7px; /* Rounded corner */
-    }
-    .brand-output-section tr:first-child th:last-child {
-        border-top-right-radius: 7px; /* Rounded corner */
-    }
-
-
-    /* Hide default Streamlit Chrome for a cleaner look */
-    #MainMenu {visibility: hidden;}
-    footer {visibility: hidden;}
-    header {visibility: hidden;}
 </style>
 """
 
