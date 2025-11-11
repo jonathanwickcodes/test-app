@@ -686,7 +686,7 @@ def get_roadmap_image_output(market_radar_data: str):
 
 def main_page():
     create_main_navbar()
-    <img src="StartWiseLogo.png">
+    html_code = '<img src="StartWiseLogo.jpeg">'
     st.markdown(f"""
     <div class="apple-hero-container">
         {logo_html}
