@@ -568,40 +568,17 @@ def navigate_to(page_key):
     st.session_state.current_page = page_key
 
 def create_main_navbar():
-    # st.markdown('<div class="apple-nav-container">', unsafe_allow_html=True)
-    cols = st.columns([2, 2, 2, 2, 2, 2])
+    # FIX: Using st.columns([1, 1, 1, 1, 1, 1]) for equal spacing of 6 buttons
+    cols = st.columns([1, 1, 1, 1, 1, 1]) 
     page_keys = list(PAGE_NAMES.keys())
     page_vals = list(PAGE_NAMES.values())
 
-    with cols[0]:
-        is_active = st.session_state.current_page == page_vals[0]
-        if st.button(page_keys[0], key="nav_home", disabled=is_active):
-            navigate_to(page_vals[0]); st.rerun()
-
-    with cols[1]:
-        is_active = st.session_state.current_page == page_vals[1]
-        if st.button(page_keys[1], key="nav_branding", disabled=is_active):
-            navigate_to(page_vals[1]); st.rerun()
-
-    with cols[2]:
-        is_active = st.session_state.current_page == page_vals[2]
-        if st.button(page_keys[2], key="nav_mac", disabled=is_active):
-            navigate_to(page_vals[2]); st.rerun()
-
-    with cols[3]:
-        is_active = st.session_state.current_page == page_vals[3]
-        if st.button(page_keys[3], key="nav_iphone", disabled=is_active):
-            navigate_to(page_vals[3]); st.rerun()
-
-    with cols[4]:
-        is_active = st.session_state.current_page == page_vals[4]
-        if st.button(page_keys[4], key="nav_watch", disabled=is_active):
-            navigate_to(page_vals[4]); st.rerun()
-
-    with cols[5]:
-        is_active = st.session_state.current_page == page_vals[5]
-        if st.button(page_keys[5], key="nav_airpods", disabled=is_active):
-            navigate_to(page_vals[5]); st.rerun()
+    for i in range(len(page_keys)):
+        with cols[i]:
+            is_active = st.session_state.current_page == page_vals[i]
+            # FIX: Buttons are disabled only if they are the current page (highlighted)
+            if st.button(page_keys[i], key=f"nav_{page_vals[i]}", disabled=is_active):
+                navigate_to(page_vals[i]); st.rerun()
 
     st.markdown('</div>', unsafe_allow_html=True)
 
@@ -676,12 +653,25 @@ def get_roadmap_image_output(market_radar_data: str):
             base64_data = resp.candidates[0].content.parts[0].inline_data.data
             return f"data:image/jpeg;base64,{base64_data}"
         else:
-            # Handle cases where the response is technically successful but returns no image data
-            st.warning("Image generation returned a response, but no valid image data was found.")
-            return "Error: Image generation returned empty data."
+            # FIX: If image generation fails, generate a text-based roadmap as a fallback
+            st.warning("Image generation returned empty data. Falling back to text-based roadmap generation...")
+            
+            # Text generation fallback prompt using the existing market radar data
+            fallback_prompt = (
+                "Based *only* on the CONTEXT below, output a structured text-based "
+                "3-phase or 4-quarter roadmap (using markdown lists and headers) "
+                "for the startup. Focus on logical next steps: MVP, Customer Acquisition, and Scaling. "
+                "CONTEXT:\n---\n" + market_radar_data
+            )
+            
+            text_model = genai.GenerativeModel("gemini-2.5-flash-preview-09-2025")
+            text_resp = text_model.generate_content(fallback_prompt)
+            
+            return "TEXT_FALLBACK::" + clean_model_markdown(text_resp.text or "Error: Could not generate a text fallback roadmap.")
 
     except Exception as e:
         st.error(f"An error occurred while calling the Gemini Image API: {e}")
+        # FIX: Ensure a clear error message is returned on exception
         return f"Error: Could not generate image content. {e}"
 
 
@@ -773,8 +763,10 @@ def page_a():
                             
                             image_loader.empty() # Clear loading message
                             
-                            if roadmap_image_data and not roadmap_image_data.startswith("Error:"):
+                            if roadmap_image_data and not (roadmap_image_data.startswith("Error:") or roadmap_image_data.startswith("TEXT_FALLBACK::")):
                                 st.success("Generation complete! All analysis and the visual roadmap are ready.")
+                            elif roadmap_image_data and roadmap_image_data.startswith("TEXT_FALLBACK::"):
+                                st.warning("Visual roadmap generation failed. A text-based fallback roadmap was generated instead.")
                             else:
                                 st.error("Error during Step 4: Roadmap Image Generation. Halting generation.")
                                 st.session_state.roadmap_image_output_base64 = "Error: Image generation failed."
@@ -791,6 +783,7 @@ def page_a():
             st.rerun() # Rerun to ensure all pages update immediately with new data
 
         if st.session_state.segmentation_output:
+            # FIX: Only output the segmentation markdown, removing the extra div tags outside
             output_placeholder.markdown(
                 f'''
                 <div class="brand-output-section">
@@ -899,26 +892,44 @@ def page_d():
         st.markdown("## Strategic Product Roadmap Visualization")
         st.markdown("""
             <p style="font-size: 1.1rem; color: #555555; margin-bottom: 2rem;">
-            This visual roadmap is dynamically generated by **Gemini-2.5-Flash-Image-Preview** based on the Market Radar report.
+            This visual roadmap is dynamically generated by **Gemini-2.5-Flash-Image-Preview** based on the Market Radar report, 
+            or a text fallback is provided if image generation fails.
             </p>
         """, unsafe_allow_html=True)
 
         if st.session_state.generating:
-            st.info("The Roadmap image is currently being generated. Please wait...")
-        elif st.session_state.roadmap_image_output_base64 and not st.session_state.roadmap_image_output_base64.startswith("Error:"):
-            # Dynamically display the generated image using base64 data URI
-            st.markdown(
-                f'''
-                <div class="brand-output-section" style="padding: 1rem; text-align: center;">
-                    <img src="{st.session_state.roadmap_image_output_base64}" alt="Startup Roadmap Visualization" 
-                         style="max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);">
-                    <h4 style="margin-top: 1rem; color: #0A2351;">Visualizing your Path to Market Success</h4>
-                </div>
-                ''',
-                unsafe_allow_html=True
-            )
-        elif st.session_state.market_radar_output:
-            st.error("Failed to generate the Roadmap image. The Market Radar report is available, but the image generation step failed. Please try re-running the generation process.")
+            st.info("The Roadmap content is currently being generated. Please wait...")
+            
+        elif st.session_state.roadmap_image_output_base64:
+            output_content = st.session_state.roadmap_image_output_base64
+            
+            if output_content.startswith("TEXT_FALLBACK::"):
+                # Display text fallback
+                text_content = output_content.replace("TEXT_FALLBACK::", "")
+                st.markdown(
+                    f'''
+                    <div class="brand-output-section">
+                        <h4 style="color: #CC6600;">Text-Based Roadmap (Visual Generation Failed)</h4>
+                        {text_content}
+                    </div>
+                    ''',
+                    unsafe_allow_html=True
+                )
+            elif not output_content.startswith("Error:"):
+                # Display successful image
+                st.markdown(
+                    f'''
+                    <div class="brand-output-section" style="padding: 1rem; text-align: center;">
+                        <img src="{output_content}" alt="Startup Roadmap Visualization" 
+                            style="max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);">
+                        <h4 style="margin-top: 1rem; color: #0A2351;">Visualizing your Path to Market Success</h4>
+                    </div>
+                    ''',
+                    unsafe_allow_html=True
+                )
+            else:
+                # Display explicit error
+                st.error(f"Failed to generate Roadmap content: {output_content.replace('Error: ', '')}")
         else:
             st.warning("Roadmap analysis not available. Please go to the Home page and submit a brand idea to begin generation.")
     else:
