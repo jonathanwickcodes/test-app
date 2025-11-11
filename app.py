@@ -9,16 +9,13 @@ import base64
 
 def get_image_as_base64(file_path):
     """Reads an image file and returns it as a base64 encoded data URI."""
-    mime_type = "image/jpeg"
-    if file_path.lower().endswith('.png'):
-        mime_type = "image/png"
-    
     try:
         with open(file_path, "rb") as img_file:
-            # FIX: Use the correct mime type based on the file extension
-            return f"data:{mime_type};base64,{base64.b64encode(img_file.read()).decode()}"
+            return f"data:image/jpeg;base64,{base64.b64encode(img_file.read()).decode()}"
     except FileNotFoundError:
-        # FIX: Suppress file not found errors globally
+        # Note: If StartWiseLogo.jpeg is not present, Streamlit will show an error, 
+        # but the app will continue to run without the logo image.
+        # st.error(f"Logo file '{file_path}' not found. Please ensure 'StartWiseLogo.jpeg' is in the same directory as 'app.py'.")
         return ""
 
 def clean_model_markdown(text: str) -> str:
@@ -37,13 +34,6 @@ def clean_model_markdown(text: str) -> str:
 
 LOGO_FILE = "StartWiseLogo.jpeg"
 logo_base64 = get_image_as_base64(LOGO_FILE)
-
-# NEW: Local images provided by the user
-ROADMAP_FILE = "roadmap.png"
-PRICING_FILE = "pricing.png"
-
-roadmap_base64 = get_image_as_base64(ROADMAP_FILE)
-pricing_base64 = get_image_as_base64(PRICING_FILE)
 
 # --- UI: CSS (NEW WHITE/DARK BLUE THEME) -----------------------------------
 
@@ -176,7 +166,7 @@ APPLE_TAILWIND_CSS = """
         border: 1px solid #CCCCCC; /* Light gray border */
         border-radius: 8px;
         padding: 12px 15px;
-        font-size: 0.85rem; /* Decreased font size to 0.85rem (FIX) */
+        font-size: 0.85rem; /* Decreased font size from 1.5rem to 0.85rem (FIX) */
         font-family: 'Inter', sans-serif;
     }
     [data-testid="stTextArea"] > div > div > textarea {
@@ -372,7 +362,7 @@ div[class*="stTextArea"] label {
 # Optional: convert the first nav button to a logo button if the logo exists.
 LOGO_BUTTON_STYLE = f"""
 <style>
-    .apple-nav-container [data-testid="stColumn"]:first-child [data-testid="stButton"] > button {
+    .apple-nav-container [data-testid="stColumn"]:first-child [data-testid="stButton"] > button {{
         {"background-image: url('" + logo_base64 + "');" if logo_base64 else ""}
         background-size: contain;
         background-repeat: no-repeat;
@@ -382,18 +372,18 @@ LOGO_BUTTON_STYLE = f"""
         border: none !important;
         padding: 0 !important;
         white-space: nowrap;
-    }
-    .apple-nav-container [data-testid="stColumn"]:first-child [data-testid="stButton"] > button:hover {
+    }}
+    .apple-nav-container [data-testid="stColumn"]:first-child [data-testid="stButton"] > button:hover {{
         background-color: #003366 !important; /* Darker blue on hover */
         opacity: 0.85;
         border: none !important;
-    }
-    .apple-nav-container [data-testid="stColumn"]:first-child [data-testid="stButton"] > button:disabled {
+    }}
+    .apple-nav-container [data-testid="stColumn"]:first-child [data-testid="stButton"] > button:disabled {{
         background-color: #0A2351 !important; /* Match navbar blue */
         opacity: 1.0;
         border: none !important;
         cursor: default !important;
-    }
+    }}
 </style>
 """
 
@@ -409,7 +399,7 @@ try:
     genai.configure(api_key=API_KEY)
     GEMINI_ENABLED = True
 except Exception as e:
-    # Do not display error to user, just disable Gemini features
+    st.error(f"Error configuring Gemini API: {e}. Please check the API key.")
     GEMINI_ENABLED = False
 
 
@@ -533,7 +523,7 @@ For each target segment:
 Restrict at Step 2 in this response. Do not ask questions at the end.
 """
 
-# NEW: Prompt template for image generation (Kept for text fallback logic)
+# NEW: Prompt template for image generation
 ROADMAP_IMAGE_PROMPT_TEMPLATE = """
 Based on the following strategic analysis context (Market Radar Report):
 ---
@@ -568,7 +558,7 @@ if 'target_lens_output' not in st.session_state:
     st.session_state.target_lens_output = None
 if 'market_radar_output' not in st.session_state:
     st.session_state.market_radar_output = None
-# State for storing the generated roadmap image (now used for text fallback data)
+# NEW: State for storing the generated roadmap image (base64)
 if 'roadmap_image_output_base64' not in st.session_state:
     st.session_state.roadmap_image_output_base64 = None
 
@@ -605,7 +595,7 @@ def get_segmentation_output(idea, launch_plan):
         text = resp.text or ""
         return clean_model_markdown(text)
     except Exception as e:
-        # Do not display error to user, just return error string
+        st.error(f"An error occurred while calling the Gemini API for Segmentation: {e}")
         return f"Error: Could not generate content. {e}"
 
 def get_target_lens_output(segmentation_data: str):
@@ -617,7 +607,7 @@ def get_target_lens_output(segmentation_data: str):
         resp = model.generate_content(prompt)
         return clean_model_markdown(resp.text or "")
     except Exception as e:
-        # Do not display error to user, just return error string
+        st.error(f"An error occurred while calling the Gemini API for Target Lens: {e}")
         return f"Error: Could not generate content. {e}"
 
 def get_market_radar_output(segmentation_data: str):
@@ -629,13 +619,22 @@ def get_market_radar_output(segmentation_data: str):
         resp = model.generate_content(prompt)
         return clean_model_markdown(resp.text or "")
     except Exception as e:
-        # Do not display error to user, just return error string
+        st.error(f"An error occurred while calling the Gemini API for Market Radar: {e}")
         return f"Error: Could not generate Market Radar content. {e}"
 
-# UPDATED: Function now ONLY generates text fallback to maintain data flow, avoiding the image generation API error.
+# NEW: Function to generate the roadmap image (Fixed for stability)
 def get_roadmap_image_output(market_radar_data: str):
+    if not GEMINI_ENABLED:
+        return "Error: Gemini API is not configured."
+
+    model_name = "gemini-2.5-flash-image-preview"
+    model = genai.GenerativeModel(model_name)
+
+    image_prompt = ROADMAP_IMAGE_PROMPT_TEMPLATE.format(market_radar_data=market_radar_data)
+
     # Function to generate text fallback
     def generate_text_fallback(data):
+        st.warning("Visual roadmap generation failed. Generating a text-based fallback roadmap...")
         fallback_prompt = (
             "Based *only* on the CONTEXT below, output a structured text-based "
             "3-phase or 4-quarter roadmap (using markdown lists and headers) "
@@ -645,14 +644,40 @@ def get_roadmap_image_output(market_radar_data: str):
         try:
             text_model = genai.GenerativeModel("gemini-2.5-flash-preview-09-2025")
             text_resp = text_model.generate_content(fallback_prompt)
-            # Use TEXT_FALLBACK:: prefix to flag this content as text roadmap data
             return "TEXT_FALLBACK::" + clean_model_markdown(text_resp.text or "Error: Could not generate a text fallback roadmap.")
         except Exception as fallback_e:
-            # Do not display error to user, just return error string
+            st.error(f"Error generating text fallback: {fallback_e}")
             return f"Error: Could not generate a text fallback roadmap. {fallback_e}"
 
-    # We skip the image generation API call entirely and just run the text fallback
-    return generate_text_fallback(market_radar_data)
+
+    try:
+        # FIX: Removed the 'config' parameter and passed 'response_mime_type' directly as an argument
+        # This resolves the "unexpected keyword argument 'config'" error.
+        resp = model.generate_content(
+            contents=[
+                {"role": "user", "parts": [{"text": image_prompt}]}
+            ],
+            response_mime_type="image/jpeg"
+        )
+
+        # Check if the response structure is valid before accessing parts
+        if (resp.candidates and 
+            resp.candidates[0].content and 
+            resp.candidates[0].content.parts and 
+            len(resp.candidates[0].content.parts) > 0 and 
+            resp.candidates[0].content.parts[0].inline_data and 
+            resp.candidates[0].content.parts[0].inline_data.data):
+            
+            base64_data = resp.candidates[0].content.parts[0].inline_data.data
+            return f"data:image/jpeg;base64,{base64_data}"
+        else:
+            # Case 1: Response returned, but no valid image data found (empty candidates/parts)
+            return generate_text_fallback(market_radar_data)
+
+    except Exception as e:
+        st.error(f"An exception occurred during Gemini Image API call: {e}")
+        # Case 2: An explicit exception occurred (e.g., timeout, network issue)
+        return generate_text_fallback(market_radar_data)
 
 
 # --- Pages -----------------------------------------------------------------
@@ -733,14 +758,23 @@ def page_a():
 
                         if mr and not mr.startswith("Error:"): 
                             
-                            # --- Step 4: Roadmap Text Fallback Generation ---
-                            st.write("Step 4/4: Generating Roadmap Text Fallback for data consistency...")
+                            # --- Step 4: Roadmap Image Generation (NEW) ---
+                            st.write("Step 4/4: Generating Roadmap Visualization...")
+                            image_loader = st.empty()
+                            image_loader.info("Image generation can take up to 30 seconds...")
+
+                            roadmap_image_data = get_roadmap_image_output(mr)
+                            st.session_state.roadmap_image_output_base64 = roadmap_image_data
                             
-                            # This step now only generates text and stores it in the session state
-                            roadmap_text_data = get_roadmap_image_output(mr) 
-                            st.session_state.roadmap_image_output_base64 = roadmap_text_data
+                            image_loader.empty() # Clear loading message
                             
-                            st.success("Generation complete! All analysis is ready (using local images for Roadmap/Pricing).")
+                            if roadmap_image_data and not (roadmap_image_data.startswith("Error:") or roadmap_image_data.startswith("TEXT_FALLBACK::")):
+                                st.success("Generation complete! All analysis and the visual roadmap are ready.")
+                            elif roadmap_image_data and roadmap_image_data.startswith("TEXT_FALLBACK::"):
+                                st.warning("Visual roadmap generation failed. A text-based fallback roadmap was generated instead.")
+                            else:
+                                st.error("Error during Step 4: Roadmap Image Generation. Halting generation.")
+                                st.session_state.roadmap_image_output_base64 = "Error: Image generation failed."
                         else:
                             st.error("Error during Step 3: Market Radar. Halting generation.")
                             st.session_state.market_radar_output = "Error: Market Radar generation failed."
@@ -754,7 +788,7 @@ def page_a():
             st.rerun() # Rerun to ensure all pages update immediately with new data
 
         if st.session_state.segmentation_output:
-            # FIX: Only output the segmentation markdown
+            # FIX: Only output the segmentation markdown, removing the extra div tags outside
             output_placeholder.markdown(
                 f'''
                 <div class="brand-output-section">
@@ -845,7 +879,7 @@ def page_c():
             unsafe_allow_html=True
         )
 
-# UPDATED: page_d displays the local roadmap.png (Image before text)
+# UPDATED: page_d now displays the generated image
 def page_d():
     create_main_navbar()
     st.markdown('<h1 class="apple-page-title">Roadmap</h1>', unsafe_allow_html=True)
@@ -861,39 +895,48 @@ def page_d():
         """, unsafe_allow_html=True)
 
         st.markdown("## Strategic Product Roadmap Visualization")
-        
-        # 1. Display the local roadmap image (if available) - PLACED BEFORE TEXT
-        if roadmap_base64:
-            st.markdown(
-                f'''
-                <div class="brand-output-section" style="padding: 1rem; text-align: center; margin-bottom: 2rem;">
-                    <img src="{roadmap_base64}" alt="Startup Roadmap Visualization" 
-                        style="max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);">
-                    <h4 style="margin-top: 1rem; color: #0A2351;">Visualizing your Path to Market Success (Source: {ROADMAP_FILE})</h4>
-                </div>
-                ''',
-                unsafe_allow_html=True
-            )
-        
-        # 2. Display text content/fallback (if available)
-        if st.session_state.roadmap_image_output_base64 and st.session_state.roadmap_image_output_base64.startswith("TEXT_FALLBACK::"):
-            text_content = st.session_state.roadmap_image_output_base64.replace("TEXT_FALLBACK::", "")
+        st.markdown("""
+            <p style="font-size: 1.1rem; color: #555555; margin-bottom: 2rem;">
+            This visual roadmap is dynamically generated by **Gemini-2.5-Flash-Image-Preview** based on the Market Radar report, 
+            or a text fallback is provided if image generation fails.
+            </p>
+        """, unsafe_allow_html=True)
+
+        if st.session_state.generating:
+            st.info("The Roadmap content is currently being generated. Please wait...")
             
-            # Show warning if static image was missing but text generated successfully
-            if not roadmap_base64 and not st.session_state.generating:
-                st.warning(f"Static image '{ROADMAP_FILE}' not found. Showing text fallback instead.")
-                
-            st.markdown(
-                f'''
-                <div class="brand-output-section" style="margin-top: 0.5rem;">
-                    <h4 style="color: #0A2351;">Textual Roadmap Summary</h4>
-                    {text_content}
-                </div>
-                ''',
-                unsafe_allow_html=True
-            )
-        elif not st.session_state.generating and not roadmap_base64:
-             st.error("Roadmap analysis missing. Please run the generation process.")
+        elif st.session_state.roadmap_image_output_base64:
+            output_content = st.session_state.roadmap_image_output_base64
+            
+            if output_content.startswith("TEXT_FALLBACK::"):
+                # Display text fallback
+                text_content = output_content.replace("TEXT_FALLBACK::", "")
+                st.markdown(
+                    f'''
+                    <div class="brand-output-section">
+                        <h4 style="color: #CC6600;">Text-Based Roadmap (Visual Generation Failed)</h4>
+                        {text_content}
+                    </div>
+                    ''',
+                    unsafe_allow_html=True
+                )
+            elif not output_content.startswith("Error:"):
+                # Display successful image
+                st.markdown(
+                    f'''
+                    <div class="brand-output-section" style="padding: 1rem; text-align: center;">
+                        <img src="{output_content}" alt="Startup Roadmap Visualization" 
+                            style="max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);">
+                        <h4 style="margin-top: 1rem; color: #0A2351;">Visualizing your Path to Market Success</h4>
+                    </div>
+                    ''',
+                    unsafe_allow_html=True
+                )
+            else:
+                # Display explicit error
+                st.error(f"Failed to generate Roadmap content: {output_content.replace('Error: ', '')}")
+        else:
+            st.warning("Roadmap analysis not available. Please go to the Home page and submit a brand idea to begin generation.")
     else:
         st.markdown("## Plan Your Startup’s Journey.")
         st.markdown(
@@ -901,34 +944,16 @@ def page_d():
             unsafe_allow_html=True
         )
 
-# UPDATED: page_e displays the local pricing.png
 def page_e():
     create_main_navbar()
     st.markdown('<h1 class="apple-page-title">Pricing</h1>', unsafe_allow_html=True)
     st.markdown("## Build Winning Pricing Models.")
-    
-    # Display the local pricing image if available
-    if pricing_base64:
-        st.markdown(
-            f'''
-            <div class="brand-output-section" style="padding: 1rem; text-align: center; margin-bottom: 2rem;">
-                <img src="{pricing_base64}" alt="Pricing Model" 
-                    style="max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);">
-                <h4 style="margin-top: 1rem; color: #0A2351;">Suggested Pricing Tiers (Source: {PRICING_FILE})</h4>
-            </div>
-            ''',
-            unsafe_allow_html=True
-        )
-    
     st.markdown("""
         <p style="font-size: 1.1rem; color: #333333;">
         Design flexible pricing strategies that align with your value proposition and market demand.
+        They've been updated with USB-C and extended battery life.
         </p>
     """, unsafe_allow_html=True)
-    
-    if not pricing_base64:
-         st.warning(f"Static image '{PRICING_FILE}' not found. Please ensure it is in the root directory.")
-
 
 # --- Router ----------------------------------------------------------------
 
