@@ -210,30 +210,32 @@ APPLE_TAILWIND_CSS = """
         border: none !important;
     }
     
-    /* Summary section (light gray box) */
-    .input-summary-section {
-        background-color: #F8F8F8; /* Light gray */
-        border: 1px solid #E0E0E0; /* Light border */
-        border-radius: 12px;
-        padding: 1.5rem 2rem;
-        margin-bottom: 1.5rem;
-    }
-    .input-summary-section h3 {
-        font-size: 1rem;
-        font-weight: 600;
-        color: #555555; /* Dark gray */
-        margin-bottom: 0.5rem;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-    }
-    .input-summary-section p {
-        font-size: 1.1rem;
-        color: #333333; /* Dark text */
-        line-height: 1.6;
-        white-space: pre-wrap;
-        word-wrap: break-word;
-        font-style: italic;
-    }
+/* Summary section (light gray box) - COMPACT VERSION */
+.input-summary-section {
+    background-color: #F8F8F8;
+    border: 1px solid #E0E0E0;
+    border-radius: 12px;
+    padding: 1rem 1.5rem; /* CHANGED: Reduced padding */
+    margin-bottom: 1.5rem; /* Kept this margin for spacing below the box */
+}
+
+.input-summary-section h3 {
+    font-size: 0.9rem; /* CHANGED: Slightly smaller font */
+    font-weight: 600;
+    color: #555555;
+    margin-bottom: 0.25rem; /* CHANGED: Reduced space below heading */
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.input-summary-section p {
+    font-size: 1rem; /* CHANGED: Slightly smaller font */
+    color: #333333;
+    line-height: 1.4; /* CHANGED: Reduced line spacing */
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    font-style: italic;
+}
     
     /* Main output section (white box) */
     .brand-output-section {
