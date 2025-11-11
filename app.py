@@ -912,11 +912,11 @@ def page_d():
                 # --- MODIFICATION: Display the pricing image ---
                 # Check if the file exists in the root directory
                 if os.path.exists("pricing.png"):
-                # Display the image, making it fit the column width
-                st.image("roadmap.png", use_column_width=True)
+                    # Display the image, making it fit the column width
+                    st.image("roadmap.png", use_column_width=True)
                 else:
-                # Show a warning if the image is missing, but don't break the app
-                st.warning("Image 'pricing.png' not found. Please make sure it's in the root directory.")
+                    # Show a warning if the image is missing, but don't break the app
+                    st.warning("Image 'pricing.png' not found. Please make sure it's in the root directory.")
                 # --- END MODIFICATION ---
                 # Display text fallback
                 text_content = output_content.replace("TEXT_FALLBACK::", "")
