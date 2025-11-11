@@ -538,9 +538,9 @@ Generate a high-level, visually clean, and professional strategic product roadma
 # --- State -----------------------------------------------------------------
 
 PAGE_NAMES = {
-    "Home": "main_page",
+    "Homepage": "main_page",
     "Segment View": "page_a",
-    "Target Lens": "page_b",
+    "Target  Lens": "page_b",
     "Market Radar": "page_c",
     "Roadmap": "page_d",
     "Pricing": "page_e",
@@ -978,9 +978,9 @@ def page_e():
 # --- Router ----------------------------------------------------------------
 
 page_functions = {
-    PAGE_NAMES["Home"]: main_page,
+    PAGE_NAMES["Homepage"]: main_page,
     PAGE_NAMES["Segment View"]: page_a,
-    PAGE_NAMES["Target Lens"]: page_b,
+    PAGE_NAMES["Target  Lens"]: page_b,
     PAGE_NAMES["Market Radar"]: page_c,
     PAGE_NAMES["Roadmap"]: page_d,
     PAGE_NAMES["Pricing"]: page_e,
