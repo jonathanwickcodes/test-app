@@ -46,7 +46,7 @@ APPLE_TAILWIND_CSS = """
         font-family: 'Inter', sans-serif;
     }
     .block-container {
-        padding-top: 2rem;
+        padding-top: 0rem; /* Changed from 2rem to 0rem */
         padding-bottom: 2rem;
         max-width: 1200px !important;
     }
@@ -180,7 +180,7 @@ APPLE_TAILWIND_CSS = """
         color: #444444; /* Dark gray label */
         font-weight: 500;
         padding-bottom: 5px;
-        font-size: 1.3rem !important;
+        font-size: 2rem !important; /* Changed from 1.3rem */
     }
     
     /* Primary button (e.g., Generate) */
