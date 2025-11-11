@@ -396,12 +396,12 @@ try:
     # NOTE: Using a placeholder API key. In a real environment, this should be secured.
     API_KEY = "AIzaSyBKDZtEZf9LjlBnADcWBtoExM7-6LTZc0E" 
     genai.configure(api_key=API_KEY)
-    CLIENT = genai.Client() # Initialize the client for robust API calls
+    # Removed: CLIENT = genai.Client() as it causes the error.
     GEMINI_ENABLED = True
 except Exception as e:
     st.error(f"Error configuring Gemini API: {e}. Please check the API key.")
     GEMINI_ENABLED = False
-    CLIENT = None
+
 
 # --- Prompts --------------------------------------------------------------
 
@@ -647,20 +647,20 @@ def get_market_radar_output(segmentation_data: str):
 
 # NEW: Function to generate the roadmap image
 def get_roadmap_image_output(market_radar_data: str):
-    global CLIENT
-    if not GEMINI_ENABLED or not CLIENT:
+    # Removed: global CLIENT
+    if not GEMINI_ENABLED:
         return "Error: Gemini API is not configured."
 
     # Use the specific image generation model as requested
     model_name = "gemini-2.5-flash-image-preview"
+    model = genai.GenerativeModel(model_name)
 
     # The prompt for the image generation
     image_prompt = ROADMAP_IMAGE_PROMPT_TEMPLATE.format(market_radar_data=market_radar_data)
 
     try:
-        # We use client.models.generate_content for specific config requirements like response_mime_type
-        resp = CLIENT.models.generate_content(
-            model=model_name,
+        # Use the GenerativeModel's generate_content method
+        resp = model.generate_content(
             contents=[
                 {"role": "user", "parts": [{"text": image_prompt}]}
             ],
