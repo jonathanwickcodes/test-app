@@ -717,9 +717,9 @@ def page_a():
             output_placeholder.error("There was an issue generating the segmentation output.")
     else:
         st.markdown('<h1 class="apple-page-title">Segment View</h1>', unsafe_allow_html=True)
-        st.markdown("## Define Your Identity.")
+        st.markdown("## Understand Your Market Segments.")
         st.markdown(
-            '<p style="font-size: 1.1rem; color: #555555; margin-top: 2rem;"><i>To generate a brand identity, please return to the <b>Home</b> page and fill out the form.</i></p>',
+            '<p style="font-size: 1.1rem; color: #555555; margin-top: 2rem;"><i>Dive deep into detailed customer segments to tailor your offerings and maximize impact. To generate a market segments, please return to the <b>Home</b> page and fill out the form.</i></p>',
             unsafe_allow_html=True
         )
 
@@ -787,42 +787,31 @@ def page_c():
         else:
             output_placeholder.warning("Could not find generated analysis. Please try submitting the form again from the Home page.")
     else:
-        st.markdown("## Define Your Positioning.")
+        st.markdown("## Track Competitors and Trends.")
         st.markdown(
-            '<p style="font-size: 1.1rem; color: #555555; margin-top: 2rem;"><i>To generate a positioning and targeting strategy, please return to the <b>Home</b> page and fill out the form.</i></p>',
+            '<p style="font-size: 1.1rem; color: #555555; margin-top: 2rem;"><i>Stay ahead with real-time insights on market dynamics, competitor moves, and emerging opportunities.</i></p>',
             unsafe_allow_html=True
         )
 
 def page_d():
     create_main_navbar()
     st.markdown('<h1 class="apple-page-title">Roadmap</h1>', unsafe_allow_html=True)
-    st.markdown("## Reimagined. Revolutionary.")
+    st.markdown("## Plan Your Startup’s Journey.")
     st.markdown("""
         <p style="font-size: 1.1rem; color: #333333;">
-        Apple Watch X features an all-new design with a thinner case and a magnetic band attachment system.
-        It’s the essential tool for a healthy and active life.
+        Create and visualize your strategic milestones to navigate growth with clarity and confidence.
         </p>
-        <ul style="color: #333333; list-style-type: disc; margin-left: 20px; padding-left: 0;">
-            <li>**S10 Chip:** Faster, more efficient processing.</li>
-            <li>**Blood Glucose Monitoring:** Non-invasive monitoring capability.</li>
-            <li>**New Health Sensors:** Advanced crash-detection.</li>
-        </ul>
     """, unsafe_allow_html=True)
 
 def page_e():
     create_main_navbar()
     st.markdown('<h1 class="apple-page-title">Pricing</h1>', unsafe_allow_html=True)
-    st.markdown("## Audio Purity. Redefined.")
+    st.markdown("## Build Winning Pricing Models.")
     st.markdown("""
         <p style="font-size: 1.1rem; color: #333333;">
-        AirPods Max deliver unparalleled high-fidelity audio with industry-leading Active Noise Cancellation.
+        Design flexible pricing strategies that align with your value proposition and market demand.
         They've been updated with USB-C and extended battery life.
         </p>
-        <ul style="color: #333333; list-style-type: disc; margin-left: 20px; padding-left: 0%;">
-            <li>**H3 Chip:** Advanced computational audio processing.</li>
-            <li>**Lossless Audio:** Support for high-resolution lossless audio.</li>
-            <li>**New Carrying Case:** Ultra-low power mode for extended standby.</li>
-        </ul>
     """, unsafe_allow_html=True)
 
 # --- Router ----------------------------------------------------------------
