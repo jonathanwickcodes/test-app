@@ -1,3 +1,4 @@
+e/D
 import streamlit as st
 import time
 import google.generativeai as genai
@@ -149,13 +150,15 @@ APPLE_TAILWIND_CSS = """
         background: none !important;
         border: none !important;
     }
-    /* Active/Disabled Navbar button styling (fixed) */
+
     .apple-nav-container [data-testid="stButton"] > button:disabled {
-        font-weight: 600;
-        color: #FFFFFF !important; /* White (active color) */
-        background: #003366 !important; /* Slightly darker blue to highlight */
-        border: none !important;
-        cursor: default !important;
+    font-weight: 600;
+    color: #FFFFFF !important; /* White (active color) */
+    background: #003366 !important; /* Slightly darker blue to highlight */
+    border: none !important;
+    cursor: default !important;
+    opacity: 1 !important; /* <-- Add this line */
+    -webkit-text-fill-color: #FFFFFF !important; /* <-- Fixes Safari’s disabled text color issue */
     }
     
     /* Inputs and Text Areas */
