@@ -726,10 +726,9 @@ def main_page():
             height=100
         )
         
-        # Center the button
-        st.markdown('<div class="apple-primary-button-container" style="display: flex; justify-content: center;">', unsafe_allow_html=True)
+        # --- CHANGED: Removed st.markdown wrapper divs ---
+        # The primary button is now styled directly via the new CSS rule
         submitted = st.form_submit_button("Generate Brand Identity", type="primary", disabled=not GEMINI_ENABLED)
-        st.markdown('</div>', unsafe_allow_html=True)
 
         if submitted:
             if not idea or not launch_plan:
