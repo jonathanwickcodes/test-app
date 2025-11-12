@@ -549,7 +549,7 @@ PAGE_NAMES = {
 }
 
 if 'current_page' not in st.session_state:
-    st.session_state.current_page = PAGE_NAMES["Home"]
+    st.session_state.current_page = PAGE_NAMES["Homepage"]
 if 'startup_idea' not in st.session_state:
     st.session_state.startup_idea = None
 if 'startup_launch_plan' not in st.session_state:
